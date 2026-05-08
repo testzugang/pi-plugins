@@ -1,6 +1,8 @@
 # pi-plugins
 
-pi package with skills and workflows for agent documentation.
+pi package for shared agent workflows. The repository is intended as a home for pi resources such as skills, extensions, prompt templates, and themes.
+
+The first version ships focused skills for working with agent documentation. The package layout is already prepared for extensions, prompt templates, and themes.
 
 ## Install locally
 
@@ -22,14 +24,51 @@ pi install /path/to/pi-plugins
 pi install git:git@github.com:testzugang/pi-plugins.git
 ```
 
-## Skills
+## Current resources
+
+### Skills
 
 - `migrate-to-agents-md` — migrate agent-specific instructions from `CLAUDE.md` to `AGENTS.md`.
 - `audit-agents-md` — audit only `AGENTS.md` for clarity, contradictions, and stale harness-specific instructions.
 
-## Usage
+Use them in pi with skill commands:
 
 ```text
 /skill:migrate-to-agents-md
 /skill:audit-agents-md
+```
+
+## Repository layout
+
+```text
+pi-plugins/
+  skills/       # Agent Skills (`<skill-name>/SKILL.md`)
+  extensions/   # Future pi extensions (`*.ts` or `<name>/index.ts`)
+  prompts/      # Future prompt templates (`*.md`)
+  themes/       # Future TUI themes (`*.json`)
+  scripts/      # Validation and maintenance scripts
+  tests/        # Skill pressure scenarios and package checks
+```
+
+The resource directories are present from the start. Empty directories contain `.gitkeep` files until their first resource is added.
+
+## Package manifest
+
+pi discovers resources through `package.json`:
+
+```json
+{
+  "pi": {
+    "skills": ["./skills"],
+    "extensions": ["./extensions"],
+    "prompts": ["./prompts"],
+    "themes": ["./themes"]
+  }
+}
+```
+
+## Validate
+
+```bash
+npm run validate
 ```

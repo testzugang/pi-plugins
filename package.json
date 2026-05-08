@@ -1,14 +1,18 @@
 {
   "name": "pi-plugins",
   "version": "0.1.0",
-  "description": "pi package with skills and workflows for agent documentation.",
+  "description": "pi package with shared skills, extensions, prompt templates, and themes.",
   "private": true,
-  "keywords": ["pi-package", "pi", "skills", "agents-md"],
+  "keywords": ["pi-package", "pi", "skills", "extensions", "prompts", "themes"],
   "license": "MIT",
   "pi": {
-    "skills": ["./skills"]
+    "skills": ["./skills"],
+    "extensions": ["./extensions"],
+    "prompts": ["./prompts"],
+    "themes": ["./themes"]
   },
   "scripts": {
-    "validate:skills": "node scripts/validate-skills.mjs"
+    "validate": "node scripts/validate-package.mjs",
+    "validate:skills": "node scripts/validate-package.mjs --skills-only"
   }
 }
