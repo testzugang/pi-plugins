@@ -14,5 +14,12 @@
   "scripts": {
     "validate": "node scripts/validate-package.mjs",
     "validate:skills": "node scripts/validate-package.mjs --skills-only"
+  },
+  "dependencies": {
+    "puppeteer-core": "^23.11.1"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "typebox": "*"
   }
 }
