@@ -1,0 +1,14 @@
+{
+  "name": "pi-plugins",
+  "version": "0.1.0",
+  "description": "pi package with skills and workflows for agent documentation.",
+  "private": true,
+  "keywords": ["pi-package", "pi", "skills", "agents-md"],
+  "license": "MIT",
+  "pi": {
+    "skills": ["./skills"]
+  },
+  "scripts": {
+    "validate:skills": "node scripts/validate-skills.mjs"
+  }
+}
