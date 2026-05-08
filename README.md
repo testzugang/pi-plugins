@@ -28,6 +28,8 @@ pi install git:git@github.com:testzugang/pi-plugins.git
 
 - `migrate-to-agents-md` — migrate agent-specific instructions from `CLAUDE.md` to `AGENTS.md`.
 - `audit-agents-md` — audit only `AGENTS.md` for clarity, contradictions, and stale harness-specific instructions.
+- `commit` — create gitmoji commits with staged-diff review, motivation, message proposal, and confirmation.
+- `pr-findings` — fetch GitHub PR review findings via `gh` and group them by severity.
 - `browser-tools` — guidance for using the browser automation extension tools.
 
 Use skills in pi with skill commands:
@@ -35,6 +37,8 @@ Use skills in pi with skill commands:
 ```text
 /skill:migrate-to-agents-md
 /skill:audit-agents-md
+/skill:commit
+/skill:pr-findings [PR#] [owner/repo] [--unresolved] [--severity blocker|warning|nit|all] [--include-stale] [--mine]
 /skill:browser-tools
 ```
 
