@@ -92,6 +92,42 @@ Install the package, then run one of:
 
 If no PR number is provided, the skill tries to resolve the PR for the current branch.
 
+### `grill-with-docs`
+
+Stress-tests a plan against the existing domain model (`CONTEXT.md`) and architectural decisions (`docs/adr/`).
+
+Install the package, then run:
+
+```text
+/skill:grill-with-docs
+```
+
+*Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills).*
+
+### `improve-codebase-architecture`
+
+Surfaces architectural friction and proposes deepening opportunities based on domain language.
+
+Install the package, then run:
+
+```text
+/skill:improve-codebase-architecture
+```
+
+*Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills).*
+
+### `handoff`
+
+Compacts the current conversation into a document for another agent or session.
+
+Install the package, then run:
+
+```text
+/skill:handoff
+```
+
+*Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills).*
+
 ### Browser tools
 
 Starts and controls a Chrome browser automation session through pi commands and agent tools.
@@ -136,6 +172,9 @@ Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project 
 - `commit`
 - `pr-findings`
 - `browser-tools`
+- `grill-with-docs`
+- `improve-codebase-architecture`
+- `handoff`
 
 ### Extensions
 
