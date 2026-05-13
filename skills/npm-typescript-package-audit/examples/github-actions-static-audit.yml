@@ -1,0 +1,46 @@
+name: npm TypeScript static package audit
+
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'npm-shrinkwrap.json'
+      - 'pnpm-lock.yaml'
+      - 'yarn.lock'
+      - 'src/**'
+      - 'dist/**'
+      - 'lib/**'
+      - '.github/workflows/**'
+      - '.npmrc'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  static-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@0000000000000000000000000000000000000000 # Replace with the real full-length commit SHA for actions/checkout
+        with:
+          persist-credentials: false
+
+      - name: Run static audit
+        run: |
+          python3 scripts/npm_ts_static_triage.py . \
+            --mode repo \
+            --markdown npm-ts-audit.md \
+            --json npm-ts-audit.json \
+            --sarif npm-ts-audit.sarif \
+            --strict-exit
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@0000000000000000000000000000000000000000 # Replace with the real full-length commit SHA for actions/upload-artifact
+        with:
+          name: npm-ts-audit
+          path: |
+            npm-ts-audit.md
+            npm-ts-audit.json
+            npm-ts-audit.sarif

@@ -1,0 +1,23 @@
+# npm/TypeScript supply-chain IOC seeds.
+# One indicator per line. hxxp and [.] are normalized by scripts/npm_ts_static_triage.py.
+# Campaign context: SafeDep report from 2026-05-12 on TanStack/Mistral/mini-shai-hulud.
+hxxp://filev2[.]getsession[.]org/file/
+getsession[.]org
+hxxp://169[.]254[.]169[.]254/latest/meta-data/iam/security-credentials/
+hxxp://127[.]0[.]0[.]1:8200
+hxxps://github[.]com/oven-sh/bun/releases/download/bun-v1.3.13/
+hxxps://git-tanstack[.]com/transformers.pyz
+git-tanstack[.]com
+transformers.pyz
+tanstack_runner.js
+router_init.js
+router_runtime.js
+.claude/settings.json
+.claude/setup.mjs
+.vscode/tasks.json
+.vscode/setup.mjs
+createCommitOnBranch
+@tanstack/setup
+tanstack/router#79ac49eedf774dd4b0cfa308722bc463cfe5885c
+79ac49eedf774dd4b0cfa308722bc463cfe5885c
+ce7e4199506959fd7a71b64209b2c07b9c82e53a946aa7d78298dc9249230d01
