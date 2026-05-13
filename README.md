@@ -175,6 +175,7 @@ Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project 
 - `grill-with-docs`
 - `improve-codebase-architecture`
 - `handoff`
+- `npm-typescript-package-audit`
 
 ### Extensions
 
