@@ -11,10 +11,11 @@ Nutze diesen Skill, wenn TypeScript-/JavaScript-Code, ein npm-Paket, ein GitHub-
 
 ### Automatischer Workflow (ohne Parameter)
 Wenn der Skill ohne weitere Parameter aufgerufen wird (z.B. `/skill:npm-typescript-package-audit`), prüfe standardmäßig alle anstehenden Updates:
-1. Führe `npm outdated --json` (oder ein äquivalentes Tool) aus, um die Liste verfügbarer Updates zu ermitteln.
-2. Iteriere durch die ermittelten Pakete.
-3. Führe für jedes Paket die in diesem Skill beschriebenen Schritte durch (Metadaten abrufen, Tarball laden, statisch prüfen).
-4. Generiere einen aggregierten Report über alle Updates.
+1. Prüfe, ob eine `package.json` im aktuellen Verzeichnis existiert. Falls nicht, brich ab und erkläre dem Nutzer, dass der automatische Modus ein npm-Projekt erfordert und er alternativ eine URL oder einen Paketnamen als Parameter übergeben kann.
+2. Führe `npm outdated --json` (oder ein äquivalentes Tool) aus, um die Liste verfügbarer Updates zu ermitteln.
+3. Iteriere durch die ermittelten Pakete.
+4. Führe für jedes Paket die in diesem Skill beschriebenen Schritte durch (Metadaten abrufen, Tarball laden, statisch prüfen).
+5. Generiere einen aggregierten Report über alle Updates.
 
 ### Spezifischer Workflow (mit Parametern)
 Wenn der Skill mit einem Paketnamen oder einer Repository-URL aufgerufen wird, fokussiere die Prüfung ausschließlich auf dieses Ziel. Lade den Code in ein temporäres Verzeichnis herunter und wende die Prüfphasen statisch an.
