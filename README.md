@@ -128,6 +128,22 @@ Install the package, then run:
 
 *Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills).*
 
+### `npm-typescript-package-audit`
+
+Static-first review of TypeScript dependencies, npm packages, and GitHub repositories for supply-chain malware and risky scripts.
+
+Install the package, then run:
+
+```text
+/skill:npm-typescript-package-audit
+```
+
+When run without parameters, the skill will ask whether you want to audit pending local npm updates or global pi extensions. You can also pass a specific package or repository URL:
+
+```text
+/skill:npm-typescript-package-audit https://github.com/user/repo
+```
+
 ### Browser tools
 
 Starts and controls a Chrome browser automation session through pi commands and agent tools.

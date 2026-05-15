@@ -10,21 +10,27 @@ description: Use when you need to audit an npm package, a GitHub repository, or 
 Nutze diesen Skill, wenn TypeScript-/JavaScript-Code, ein npm-Paket, ein GitHub-Repository, ein Dependency-Update oder ein npm-Lockfile vor der Nutzung geprüft werden soll. Der Fokus liegt auf Malware- und Supply-Chain-Erkennung vor `npm install`, `npm ci`, Build, Test, Import oder IDE-/CI-Ausführung.
 
 ### Automatischer Workflow (ohne Parameter)
-Wenn der Skill ohne weitere Parameter aufgerufen wird (z.B. `/skill:npm-typescript-package-audit`), überprüfe, ob im aktuellen Verzeichnis eine `package.json` vorliegt. 
+Wenn der Skill ohne weitere Parameter aufgerufen wird (z.B. `/skill:npm-typescript-package-audit`), ermittle zuerst, ob im aktuellen Verzeichnis eine `package.json` vorliegt. 
 
-**Szenario A: Im Projektverzeichnis (package.json existiert)**
+Frage den Nutzer dann explizit (bevorzugt über das `user_select` Tool), was geprüft werden soll. Biete folgende Optionen an:
+- **"Lokale npm-Abhängigkeiten prüfen"** (nur anbieten, falls `package.json` existiert)
+- **"Globale Pi-Erweiterungen prüfen"** (immer anbieten)
+- **"Beides prüfen"** (nur anbieten, falls `package.json` existiert)
+
+Führe dann je nach Auswahl die entsprechenden Szenarien aus:
+
+**Szenario A: Lokale npm-Abhängigkeiten**
 1. Führe `npm outdated --json` (oder ein äquivalentes Tool) aus, um die Liste verfügbarer Updates zu ermitteln.
 2. Iteriere durch die ermittelten Pakete.
 3. Führe für jedes Paket die in diesem Skill beschriebenen statischen Prüfungen durch.
-4. Generiere einen aggregierten Report über alle Updates.
+4. Generiere einen aggregierten Report.
 
-**Szenario B: Globale Pi-Installation (keine package.json vorhanden)**
-Falls keine `package.json` existiert, überprüfe stattdessen die installierten Pi-Erweiterungen (Skills, Themes, Prompts). Dies ist der Hauptzweck für Updates außerhalb von npm-Projekten.
-1. Führe `pi list` (bzw. den entsprechenden Befehl zum Auslesen der pi-Settings) aus, um alle global konfigurierten git/npm-Pakete zu ermitteln.
+**Szenario B: Globale Pi-Erweiterungen**
+1. Führe `pi list` (bzw. den entsprechenden Befehl zum Auslesen der pi-Settings) aus, um alle global konfigurierten pi-Pakete und Erweiterungen zu ermitteln.
 2. Ermittle für jedes Paket, ob auf der Remote-Quelle (z. B. auf GitHub) neue Commits oder Versionen verfügbar sind.
-3. Klonen/Lade die Updates temporär herunter, **ohne sie zu installieren oder Scripte auszuführen**.
+3. Klone/lade die Updates temporär herunter, **ohne sie zu installieren oder Scripte auszuführen**.
 4. Führe die in diesem Skill beschriebenen statischen Prüfungen auf dem neuen Code durch.
-5. Generiere einen Report, der angibt, welche Pi-Erweiterungen bedenkenlos aktualisiert werden können und welche Risiken bergen.
+5. Generiere einen Report, der angibt, welche Pi-Erweiterungen sicher aktualisiert werden können.
 
 ### Spezifischer Workflow (mit Parametern)
 Wenn der Skill mit einem Paketnamen oder einer Repository-URL aufgerufen wird, fokussiere die Prüfung ausschließlich auf dieses Ziel. Lade den Code in ein temporäres Verzeichnis herunter und wende die Prüfphasen statisch an.
