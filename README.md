@@ -92,6 +92,16 @@ Install the package, then run one of:
 
 If no PR number is provided, the skill tries to resolve the PR for the current branch.
 
+Agent/tool usage:
+
+```text
+pr_findings({ unresolved: true })
+pr_findings({ prNumber: 123, repo: "owner/repo", severity: "blocker" })
+pr_findings({ waitForNextReview: true, waitTimeoutSec: 60, waitPollSec: 30 })
+```
+
+`waitForNextReview` is useful right after a push so findings are only read after fresh review activity (default wait mode: `new-review-activity`).
+
 ### `grill-with-docs`
 
 Stress-tests a plan against the existing domain model (`CONTEXT.md`) and architectural decisions (`docs/adr/`).
@@ -196,6 +206,7 @@ Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project 
 ### Extensions
 
 - `browser-tools`
+- `pr-findings`
 
 ## Repository layout
 
