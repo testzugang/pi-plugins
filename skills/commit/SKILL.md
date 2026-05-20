@@ -18,19 +18,19 @@ Do not commit without explicit confirmation.
    - `git diff --cached --stat`
    - `git diff --cached`
    - `git log --oneline -10`
-2. If nothing is staged, tell the user there are no staged changes.
-   - Do not stage files automatically unless the user explicitly asked for staging.
-   - If the user asked to stage and commit, show the candidate file list and ask before staging.
+2. Decide path:
+   - **If files are already staged:** use fast-path (no staging questions).
+   - **If nothing is staged and user requested staging/commit all:** show candidate files once and ask once before staging.
+   - **If nothing is staged and no staging was requested:** stop and tell the user no staged changes.
 3. Check whether staged changes contain multiple unrelated concerns.
    - If yes, recommend separate commits and ask how to proceed.
-4. Ask the user for the motivation: why this change exists.
-5. Select a gitmoji.
-   - If the user specified one, use it.
-   - Otherwise propose 2-3 likely choices with `user_select`.
-6. Draft a commit message with subject and body.
-7. Show the exact files and complete message, then ask for confirmation with `user_select`.
-8. Run `git commit` only after confirmation.
-9. Run `git status --short` after the commit and report the result.
+4. Gather message inputs with minimal churn:
+   - Ask for motivation once.
+   - Gitmoji selection only if not already specified by the user.
+5. Draft a commit message with subject and body.
+6. Ask exactly one final confirmation (`user_select`) with full message + file list.
+7. Run `git commit` only after final confirmation.
+8. Run `git status --short` after the commit and report the result.
 
 ## Gitmoji Reference
 
@@ -62,6 +62,14 @@ Default format:
 ```
 
 Keep the subject under 72 characters when possible. The subject should describe the outcome, not just list touched files.
+
+## Confirmation Rules
+
+- Keep confirmations minimal while preserving safety.
+- **Always require one explicit final confirmation before `git commit`.**
+- Do not ask duplicate confirmations for the same decision.
+- If files are already staged, do not ask extra staging questions.
+- If user asked for staging (`stage and commit` / `commit all`), ask once for file selection, then proceed to final confirmation.
 
 ## Confirmation Prompt
 
@@ -118,6 +126,7 @@ If a hook fails:
 | --- | --- |
 | Committing without reading the staged diff. | Always inspect staged changes first. |
 | Staging all files automatically. | Ask before staging unless explicitly requested. |
+| Asking the same confirmation twice. | Use one staging confirmation (only if needed) and one final commit confirmation. |
 | Writing a message with no “why.” | Ask for motivation and include it in the body. |
 | Choosing a gitmoji silently when ambiguous. | Offer likely options with `user_select`. |
 | Using `--no-verify` by default. | Only use it when explicitly requested. |
