@@ -138,20 +138,20 @@ Install the package, then run:
 
 *Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills).*
 
-### `npm-typescript-package-audit`
+### `dependency-audit`
 
 Static-first review of TypeScript dependencies, npm packages, and GitHub repositories for supply-chain malware and risky scripts.
 
 Install the package, then run:
 
 ```text
-/skill:npm-typescript-package-audit
+/skill:dependency-audit
 ```
 
 When run without parameters, the skill will ask whether you want to audit pending local npm updates or global pi extensions. You can also pass a specific package or repository URL:
 
 ```text
-/skill:npm-typescript-package-audit https://github.com/user/repo
+/skill:dependency-audit https://github.com/user/repo
 ```
 
 ### Browser tools
@@ -201,7 +201,7 @@ Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project 
 - `grill-with-docs`
 - `improve-codebase-architecture`
 - `handoff`
-- `npm-typescript-package-audit`
+- `dependency-audit`
 
 ### Extensions
 

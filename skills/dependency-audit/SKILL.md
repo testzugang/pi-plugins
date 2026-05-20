@@ -1,5 +1,5 @@
 ---
-name: npm-typescript-package-audit
+name: dependency-audit
 description: Use when you need to audit an npm package, a GitHub repository, or pending dependency updates for supply-chain malware and risky lifecycle scripts before installation. Default action without parameters is to audit all pending updates.
 ---
 
@@ -10,12 +10,17 @@ description: Use when you need to audit an npm package, a GitHub repository, or 
 Nutze diesen Skill, wenn TypeScript-/JavaScript-Code, ein npm-Paket, ein GitHub-Repository, ein Dependency-Update oder ein npm-Lockfile vor der Nutzung geprüft werden soll. Der Fokus liegt auf Malware- und Supply-Chain-Erkennung vor `npm install`, `npm ci`, Build, Test, Import oder IDE-/CI-Ausführung.
 
 ### Automatischer Workflow (ohne Parameter)
-Wenn der Skill ohne weitere Parameter aufgerufen wird (z.B. `/skill:npm-typescript-package-audit`), ermittle zuerst, ob im aktuellen Verzeichnis eine `package.json` vorliegt. 
+Wenn der Skill ohne weitere Parameter aufgerufen wird (z.B. `/skill:dependency-audit`), muss **immer zuerst** eine explizite Modus-Auswahl über `user_select` erfolgen.
 
-Frage den Nutzer dann explizit (bevorzugt über das `user_select` Tool), was geprüft werden soll. Biete folgende Optionen an:
-- **"Lokale npm-Abhängigkeiten prüfen"** (nur anbieten, falls `package.json` existiert)
-- **"Globale Pi-Erweiterungen prüfen"** (immer anbieten)
-- **"Beides prüfen"** (nur anbieten, falls `package.json` existiert)
+Pflichtfrage (immer, als erster Schritt):
+- **"Pi-Dependencies prüfen"**
+- **"Projekt-Dependencies (aktuelles Verzeichnis) prüfen"**
+- **"Beides prüfen"**
+
+Regeln:
+1. Diese Auswahl darf nicht übersprungen werden, auch nicht bei fehlender `package.json`.
+2. Existiert bei Auswahl "Projekt-Dependencies" keine `package.json`, gib eine klare Rückfrage: Pfad angeben oder auf Pi-Dependencies wechseln.
+3. Starte keine Prüfung, bevor der Nutzer einen der drei Modi bestätigt hat.
 
 Führe dann je nach Auswahl die entsprechenden Szenarien aus:
 
