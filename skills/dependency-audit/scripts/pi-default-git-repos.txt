@@ -1,0 +1,4 @@
+# Default local git-based pi package checkouts.
+~/.pi/agent/git/github.com/testzugang/pi-plugins
+~/.pi/agent/git/github.com/fgladisch/pi-skills
+~/.pi/agent/git/github.com/hasit/pi-community-themes

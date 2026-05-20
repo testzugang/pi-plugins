@@ -31,7 +31,11 @@ Führe dann je nach Auswahl die entsprechenden Szenarien aus:
 4. Generiere einen aggregierten Report.
 
 **Szenario B: Globale Pi-Erweiterungen**
-1. Führe `pi list` (bzw. den entsprechenden Befehl zum Auslesen der pi-Settings) aus, um alle global konfigurierten pi-Pakete und Erweiterungen zu ermitteln.
+1. Nutze bevorzugt die mitgelieferten Hilfsskripte statt ad-hoc Bash-Loops:
+   - `scripts/pi-check-current-global-versions.sh`
+   - `scripts/pi-check-latest-npm-versions.sh`
+   - `scripts/pi-check-git-source-updates.sh`
+   - optional End-to-End: `scripts/run_pi_dependency_audit.py`
 2. Ermittle für jedes Paket, ob auf der Remote-Quelle (z. B. auf GitHub) neue Commits oder Versionen verfügbar sind.
 3. Klone/lade die Updates temporär herunter, **ohne sie zu installieren oder Scripte auszuführen**.
 4. Führe die in diesem Skill beschriebenen statischen Prüfungen auf dem neuen Code durch.

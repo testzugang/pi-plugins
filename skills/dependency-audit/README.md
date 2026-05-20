@@ -21,6 +21,22 @@ python3 scripts/npm_ts_static_triage.py /path/to/repo-or-package.tgz \
   --strict-exit
 ```
 
+For global pi dependency checks without on-the-fly shell loops:
+
+```bash
+bash scripts/pi-check-current-global-versions.sh
+bash scripts/pi-check-latest-npm-versions.sh
+bash scripts/pi-check-git-source-updates.sh
+# or everything in one run
+bash scripts/pi-check-all-updates.sh
+
+# full static update audit + markdown summary
+python3 scripts/run_pi_dependency_audit.py --output /tmp/pi_audit_aggregated.json
+python3 scripts/summarize_pi_dependency_audit.py \
+  --input /tmp/pi_audit_aggregated.json \
+  --output /tmp/pi_audit_report.md
+```
+
 `--strict-exit` exits with code `2` for HIGH/CRITICAL findings and `1` for MEDIUM-only findings.
 
 ## Safe package acquisition
@@ -38,6 +54,14 @@ Do not run `npm install`, `npm ci`, `npm pack`, `npm test`, `npm run build`, `np
 
 - `SKILL.md`: full German skill instructions and policy.
 - `scripts/npm_ts_static_triage.py`: standalone stdlib-only scanner.
+- `scripts/pi-check-current-global-versions.sh`: reads installed versions for default/global pi packages.
+- `scripts/pi-check-latest-npm-versions.sh`: reads latest npm registry versions for default/global pi packages.
+- `scripts/pi-check-git-source-updates.sh`: compares local git checkouts with origin branch heads.
+- `scripts/pi-check-all-updates.sh`: runs all three checks in sequence.
+- `scripts/pi-default-packages.txt`: default package target list for the helper scripts.
+- `scripts/pi-default-git-repos.txt`: default git repo target list for update checks.
+- `scripts/run_pi_dependency_audit.py`: end-to-end static audit workflow for global pi dependency updates.
+- `scripts/summarize_pi_dependency_audit.py`: creates a markdown summary from aggregated JSON results.
 - `rules/iocs.txt`: editable IOC seed list.
 - `templates/report.md`: manual review template.
 - `examples/sample-commands.md`: safe commands and review playbooks.

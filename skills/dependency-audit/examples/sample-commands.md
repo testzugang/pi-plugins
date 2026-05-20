@@ -70,7 +70,34 @@ grep -RInE 'child_process|execSync|spawn\(|eval\(|new Function|fetch\(|https?://
 find . -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.ts' -o -name '*.tsx' \) -size +500k -print
 ```
 
-## 7. Review outcome policy example
+## 7. Reusable helpers for global pi dependency checks
+
+```bash
+# current installed versions
+bash scripts/pi-check-current-global-versions.sh
+
+# latest npm versions
+bash scripts/pi-check-latest-npm-versions.sh
+
+# git-based source updates for local checkouts
+bash scripts/pi-check-git-source-updates.sh
+
+# all checks in one call
+bash scripts/pi-check-all-updates.sh
+```
+
+Each helper accepts optional package/repo arguments to override defaults.
+
+## 8. End-to-end global pi update audit (static only)
+
+```bash
+python3 scripts/run_pi_dependency_audit.py --output /tmp/pi_audit_aggregated.json
+python3 scripts/summarize_pi_dependency_audit.py \
+  --input /tmp/pi_audit_aggregated.json \
+  --output /tmp/pi_audit_report.md
+```
+
+## 9. Review outcome policy example
 
 - CRITICAL: quarantine, do not install, rotate any exposed credentials.
 - HIGH: block until a human reviewer approves a documented fix or allowlist.

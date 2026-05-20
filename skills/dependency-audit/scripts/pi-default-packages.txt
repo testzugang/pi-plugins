@@ -1,0 +1,16 @@
+# Default global pi-related npm packages to audit.
+pi-mcp-adapter
+pi-subagents
+pi-web-access
+pi-claude-bridge
+pi-mermaid
+pi-tool-display
+pi-total-recall
+pi-terminal-signals
+@aliou/pi-guardrails
+@fgladisch/pi-bash-approval
+@fgladisch/pi-persistent-history
+@fgladisch/pi-user-select
+@fgladisch/pi-welcome-message
+pi-powerline
+pi-suggest

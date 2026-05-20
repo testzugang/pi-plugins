@@ -148,11 +148,16 @@ Install the package, then run:
 /skill:dependency-audit
 ```
 
-When run without parameters, the skill will ask whether you want to audit pending local npm updates or global pi extensions. You can also pass a specific package or repository URL:
+When run without parameters, the skill asks first whether to audit pi dependencies, project dependencies, or both. You can also pass a specific package or repository URL:
 
 ```text
 /skill:dependency-audit https://github.com/user/repo
 ```
+
+For reusable global-pi checks (instead of ad-hoc shell loops), see:
+- `skills/dependency-audit/scripts/pi-check-*.sh`
+- `skills/dependency-audit/scripts/run_pi_dependency_audit.py`
+- `skills/dependency-audit/scripts/summarize_pi_dependency_audit.py`
 
 ### Browser tools
 
