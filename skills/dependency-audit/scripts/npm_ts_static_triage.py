@@ -67,6 +67,8 @@ CODE_EXTENSIONS = {
     ".sh", ".bash", ".zsh", ".fish", ".ps1", ".cmd", ".bat",
 }
 
+DOC_EXTENSIONS = {".md", ".txt"}
+
 BINARY_EXEC_EXTENSIONS = {
     ".exe", ".dll", ".so", ".dylib", ".node", ".wasm",
     ".bin", ".elf", ".msi", ".pkg", ".appimage",
@@ -947,6 +949,7 @@ def scan_source_file(ctx: ScanContext, path: Path):
 
     text = decode_text(data)
     lower_text = text.lower()
+    is_doc_file = ext in DOC_EXTENSIONS
 
     # Known IOCs first.
     for ioc in IOC_STRINGS:
@@ -970,34 +973,39 @@ def scan_source_file(ctx: ScanContext, path: Path):
     gh_hits = collect_hits(text, GITHUB_API_PATTERNS)
     token_name_hit = TOKEN_NAME_PATTERN.search(text)
 
-    if network_hits and exec_hits:
+    # Documentation often contains command/API examples that would otherwise trigger
+    # payload heuristics. Only apply those heuristics to docs when the file is a
+    # lifecycle entrypoint or explicit setup/install script.
+    apply_payload_heuristics = (not is_doc_file) or is_lifecycle_ref
+
+    if apply_payload_heuristics and network_hits and exec_hits:
         line = min([h[0] for h in network_hits + exec_hits if h[0] is not None] or [None])
         ctx.add("CRITICAL", "payload-behavior", path, line, "Network plus code/process execution behavior", f"network={labels_only(network_hits)}; execution={labels_only(exec_hits)}", "Do not execute. Manually trace data flow and verify there is no downloader/dropper/exfiltration path.", "medium", ["network", "exec", "malware-pattern"])
-    elif exec_hits and is_lifecycle_ref:
+    elif apply_payload_heuristics and exec_hits and is_lifecycle_ref:
         ctx.add("HIGH", "payload-behavior", path, exec_hits[0][0], "Lifecycle-referenced file can execute commands/code", f"execution={labels_only(exec_hits)}", "Review lifecycle entrypoint manually. Avoid install scripts unless required and allowlisted.", "medium", ["exec", "lifecycle"])
-    elif network_hits and is_lifecycle_ref:
+    elif apply_payload_heuristics and network_hits and is_lifecycle_ref:
         ctx.add("HIGH", "payload-behavior", path, network_hits[0][0], "Lifecycle-referenced file performs network access", f"network={labels_only(network_hits)}", "Install scripts should not download code/binaries without transparent integrity checks and provenance.", "medium", ["network", "lifecycle"])
 
-    if (secret_path_hits or token_name_hit) and (network_hits or exec_hits or gh_hits):
+    if apply_payload_heuristics and (secret_path_hits or token_name_hit) and (network_hits or exec_hits or gh_hits):
         labels = labels_only(secret_path_hits)
         if token_name_hit:
             labels.append("credential environment variable")
         ctx.add("CRITICAL", "credential-access", path, token_name_hit and line_for_offset(text, token_name_hit.start()) or (secret_path_hits[0][0] if secret_path_hits else None), "Credential access combined with network/execution", f"credentials={labels}; network={labels_only(network_hits)}; execution={labels_only(exec_hits)}; github_api={labels_only(gh_hits)}", "Assume credential theft is possible. Do not run; inspect for exfiltration and rotate any credentials exposed to this code.", "medium", ["credential", "exfiltration"])
-    elif secret_path_hits or token_name_hit:
+    elif apply_payload_heuristics and (secret_path_hits or token_name_hit):
         labels = labels_only(secret_path_hits)
         if token_name_hit:
             labels.append("credential environment variable")
         ctx.add("MEDIUM", "credential-access", path, token_name_hit and line_for_offset(text, token_name_hit.start()) or (secret_path_hits[0][0] if secret_path_hits else None), "Credential-related names or paths referenced", f"credentials={labels}", "Verify this is legitimate configuration handling and not token harvesting.", "medium", ["credential"])
 
-    if ide_hits and (network_hits or exec_hits or gh_hits):
+    if apply_payload_heuristics and ide_hits and (network_hits or exec_hits or gh_hits):
         ctx.add("CRITICAL", "ide-agent-persistence", path, ide_hits[0][0], "IDE/AI-agent config path combined with execution/network/GitHub write behavior", f"ide={labels_only(ide_hits)}; exec={labels_only(exec_hits)}; network={labels_only(network_hits)}; github_api={labels_only(gh_hits)}", "Treat as potential repo-poisoning/persistence. Remove configs and audit GitHub token exposure.", "medium", ["ide", "agent", "persistence"])
-    elif ide_hits:
+    elif apply_payload_heuristics and ide_hits:
         ctx.add("HIGH", "ide-agent-config", path, ide_hits[0][0], "IDE/AI-agent configuration path referenced", f"ide={labels_only(ide_hits)}", "Review whether the package/repo writes or ships IDE/agent configs unexpectedly.", "medium", ["ide", "agent"])
 
-    if gh_hits and token_name_hit:
+    if apply_payload_heuristics and gh_hits and token_name_hit:
         ctx.add("HIGH", "github-api", path, gh_hits[0][0], "GitHub API usage with token-related code", f"github_api={labels_only(gh_hits)}", "Ensure GitHub token use is limited to documented operations and cannot modify repo config or workflows unexpectedly.", "medium", ["github", "token"])
 
-    if stealth_hits and (is_lifecycle_ref or network_hits or exec_hits):
+    if apply_payload_heuristics and stealth_hits and (is_lifecycle_ref or network_hits or exec_hits):
         ctx.add("HIGH", "stealth", path, stealth_hits[0][0], "Stealthy script behavior", f"stealth={labels_only(stealth_hits)}", "Review why output is suppressed, permissions changed, or failures forced after execution.", "medium", ["stealth"])
 
     # Obfuscation heuristics.
@@ -1008,7 +1016,7 @@ def scan_source_file(ctx: ScanContext, path: Path):
     hex_id_count = len(re.findall(r"_0x[a-fA-F0-9]{3,}", text[:ctx.max_file_bytes]))
     base64_like = re.findall(r"['\"]([A-Za-z0-9+/]{160,}={0,2})['\"]", text[:ctx.max_file_bytes])
     high_entropy_strings = [s for s in base64_like[:10] if entropy(s) > 4.5]
-    if obf_hits or long_lines or huge_single_line or hex_id_count > 20 or high_entropy_strings:
+    if apply_payload_heuristics and (obf_hits or long_lines or huge_single_line or hex_id_count > 20 or high_entropy_strings):
         sev = "HIGH" if (network_hits or exec_hits or is_lifecycle_ref or huge_single_line) else "MEDIUM"
         if huge_single_line and (network_hits or exec_hits or is_lifecycle_ref):
             sev = "CRITICAL"

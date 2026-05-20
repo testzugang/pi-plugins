@@ -36,10 +36,17 @@ Führe dann je nach Auswahl die entsprechenden Szenarien aus:
    - `scripts/pi-check-latest-npm-versions.sh`
    - `scripts/pi-check-git-source-updates.sh`
    - optional End-to-End: `scripts/run_pi_dependency_audit.py`
-2. Ermittle für jedes Paket, ob auf der Remote-Quelle (z. B. auf GitHub) neue Commits oder Versionen verfügbar sind.
-3. Klone/lade die Updates temporär herunter, **ohne sie zu installieren oder Scripte auszuführen**.
-4. Führe die in diesem Skill beschriebenen statischen Prüfungen auf dem neuen Code durch.
-5. Generiere einen Report, der angibt, welche Pi-Erweiterungen sicher aktualisiert werden können.
+2. Nutze die Config-Resolution für Sicherheitsrichtlinien (Priorität):
+   - `--config /path/to/config.json`
+   - `~/.pi/dependency-audit.json`
+   - `skills/dependency-audit/config.json`
+   - Fallback auf Defaults
+3. `min_update_age_hours` steuert die Mindest-Altersschwelle für Updates. Default ist `24`.
+4. Ermittle für jedes Paket, ob auf der Remote-Quelle (z. B. auf GitHub) neue Commits oder Versionen verfügbar sind.
+5. Wenn ein Update jünger als `min_update_age_hours` ist, markiere es als `too_fresh` mit `SKIP_TOO_FRESH`.
+6. Klone/lade die übrigen Updates temporär herunter, **ohne sie zu installieren oder Scripte auszuführen**.
+7. Führe die in diesem Skill beschriebenen statischen Prüfungen auf dem neuen Code durch.
+8. Generiere einen Report, der angibt, welche Pi-Erweiterungen sicher aktualisiert werden können.
 
 ### Spezifischer Workflow (mit Parametern)
 Wenn der Skill mit einem Paketnamen oder einer Repository-URL aufgerufen wird, fokussiere die Prüfung ausschließlich auf dieses Ziel. Lade den Code in ein temporäres Verzeichnis herunter und wende die Prüfphasen statisch an.

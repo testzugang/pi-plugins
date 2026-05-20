@@ -95,6 +95,11 @@ python3 scripts/run_pi_dependency_audit.py --output /tmp/pi_audit_aggregated.jso
 python3 scripts/summarize_pi_dependency_audit.py \
   --input /tmp/pi_audit_aggregated.json \
   --output /tmp/pi_audit_report.md
+
+# Optional: use custom config (highest precedence)
+python3 scripts/run_pi_dependency_audit.py \
+  --config /path/to/dependency-audit.json \
+  --output /tmp/pi_audit_aggregated.json
 ```
 
 ## 9. Review outcome policy example

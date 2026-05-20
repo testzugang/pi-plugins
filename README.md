@@ -158,6 +158,7 @@ For reusable global-pi checks (instead of ad-hoc shell loops), see:
 - `skills/dependency-audit/scripts/pi-check-*.sh`
 - `skills/dependency-audit/scripts/run_pi_dependency_audit.py`
 - `skills/dependency-audit/scripts/summarize_pi_dependency_audit.py`
+- `skills/dependency-audit/config.json` (default age-gate: 24h)
 
 ### Browser tools
 

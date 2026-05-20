@@ -24,6 +24,7 @@ def decision_label(decision: str) -> str:
         "SKIP_NOT_INSTALLED": "➖ NOT INSTALLED",
         "SKIP_MISSING": "➖ MISSING",
         "SKIP_NO_REMOTE_BRANCH": "➖ NO REMOTE BRANCH",
+        "SKIP_TOO_FRESH": "⏱️ TOO FRESH",
     }
     return labels.get(decision, decision)
 
@@ -38,6 +39,15 @@ def sev(counts: dict[str, Any], key: str) -> int:
     return raw if isinstance(raw, int) else 0
 
 
+def is_transitive_node_modules_finding(finding: dict[str, Any]) -> bool:
+    path = str(finding.get("path", ""))
+    return "node_modules/" in path
+
+
+def significant_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [f for f in findings if str(f.get("severity")) in {"CRITICAL", "HIGH", "MEDIUM"}]
+
+
 def render_markdown(results: list[dict[str, Any]]) -> str:
     md: list[str] = []
     md.append("# 🛡️ Global Pi Dependency Security Audit Report")
@@ -49,6 +59,7 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
 
     updates: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
+    deferred: list[dict[str, Any]] = []
 
     for item in results:
         status = str(item.get("status", "unknown"))
@@ -60,6 +71,8 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
 
         if status == "update_available":
             updates.append(item)
+        if status == "too_fresh":
+            deferred.append(item)
 
         md.append(
             "| `{name}` | {typ} | `{current}` | `{latest}` | {status} | {decision} | {c} | {h} | {m} | {l} | {i} |".format(
@@ -97,33 +110,73 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
             md.append(f"- **Decision:** {decision_label(str(item.get('decision', 'UNKNOWN')))}")
 
             findings = item.get("findings", []) if isinstance(item.get("findings"), list) else []
-            significant = [f for f in findings if str(f.get("severity")) in {"CRITICAL", "HIGH", "MEDIUM"}]
+            significant = significant_findings(findings)
+            transitive_significant = [f for f in significant if is_transitive_node_modules_finding(f)]
+            first_party_significant = [f for f in significant if not is_transitive_node_modules_finding(f)]
+
             if not findings:
                 md.append("- No findings.")
             elif not significant:
                 md.append(f"- Only LOW/INFO findings ({len(findings)} total).")
             else:
-                md.append(f"- Significant findings ({len(significant)}):")
-                for finding in significant:
-                    line = finding.get("line")
-                    line_suffix = f":{line}" if line else ""
-                    md.append(
-                        f"  - [{finding.get('severity','?')}] {finding.get('title','?')} — `{finding.get('path','?')}{line_suffix}`"
+                md.append(
+                    f"- Significant findings: {len(significant)} total (first-party: {len(first_party_significant)}, transitive node_modules: {len(transitive_significant)})."
+                )
+
+                if first_party_significant:
+                    md.append("- First-party findings:")
+                    for finding in first_party_significant[:12]:
+                        line = finding.get("line")
+                        line_suffix = f":{line}" if line else ""
+                        md.append(
+                            f"  - [{finding.get('severity','?')}] {finding.get('title','?')} — `{finding.get('path','?')}{line_suffix}`"
+                        )
+                        recommendation = finding.get("recommendation")
+                        if recommendation:
+                            md.append(f"    - Recommendation: {recommendation}")
+                    if len(first_party_significant) > 12:
+                        md.append(f"  - … {len(first_party_significant) - 12} more first-party significant finding(s)")
+
+                if transitive_significant:
+                    md.append("- Transitive node_modules findings (summarized):")
+                    by_severity: dict[str, int] = {}
+                    by_category: dict[str, int] = {}
+                    for finding in transitive_significant:
+                        sev_key = str(finding.get("severity", "?"))
+                        cat_key = str(finding.get("category", "?"))
+                        by_severity[sev_key] = by_severity.get(sev_key, 0) + 1
+                        by_category[cat_key] = by_category.get(cat_key, 0) + 1
+                    sev_summary = ", ".join(f"{k}: {by_severity[k]}" for k in sorted(by_severity))
+                    cat_summary = ", ".join(
+                        f"{k}: {v}" for k, v in sorted(by_category.items(), key=lambda kv: (-kv[1], kv[0]))[:8]
                     )
-                    recommendation = finding.get("recommendation")
-                    if recommendation:
-                        md.append(f"    - Recommendation: {recommendation}")
+                    md.append(f"  - Severity breakdown: {sev_summary}")
+                    md.append(f"  - Top categories: {cat_summary}")
             md.append("")
 
     safe = [i for i in updates if str(i.get("decision")) in {"PASS_WITH_CAUTION", "PASS_UP_TO_DATE"}]
     review = [i for i in updates if str(i.get("decision")) == "REVIEW_BEFORE_USE"]
     blocked = [i for i in updates if str(i.get("decision")) in {"BLOCK_UNTIL_REVIEW", "QUARANTINE"}]
 
+    if deferred:
+        md.append("## ⏱️ Deferred by Minimum Update Age")
+        md.append("")
+        for item in deferred:
+            age = item.get("update_age_hours")
+            threshold = item.get("min_update_age_hours")
+            age_str = f"{age:.1f}h" if isinstance(age, (int, float)) else "unknown"
+            threshold_str = f"{threshold:.1f}h" if isinstance(threshold, (int, float)) else "unknown"
+            md.append(
+                f"- `{item.get('name','?')}` ({short_rev(item.get('current'))} ➜ {short_rev(item.get('latest'))}) — {age_str} < {threshold_str}"
+            )
+        md.append("")
+
     md.append("## 💡 Recommendation")
     md.append("")
     md.append(f"- Safe to update now: **{len(safe)}**")
     md.append(f"- Needs manual review: **{len(review)}**")
     md.append(f"- Blocked/quarantine: **{len(blocked)}**")
+    md.append(f"- Deferred by age gate: **{len(deferred)}**")
 
     if safe:
         safe_npm = [i["name"] for i in safe if i.get("type") == "npm"]

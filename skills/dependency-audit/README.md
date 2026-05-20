@@ -37,6 +37,20 @@ python3 scripts/summarize_pi_dependency_audit.py \
   --output /tmp/pi_audit_report.md
 ```
 
+Age-gate configuration (default: 24h):
+
+- repo default: `skills/dependency-audit/config.json`
+- user override: `~/.pi/dependency-audit.json`
+- highest priority override: `--config /path/to/config.json`
+
+Example config:
+
+```json
+{
+  "min_update_age_hours": 24
+}
+```
+
 `--strict-exit` exits with code `2` for HIGH/CRITICAL findings and `1` for MEDIUM-only findings.
 
 ## Safe package acquisition
@@ -62,6 +76,7 @@ Do not run `npm install`, `npm ci`, `npm pack`, `npm test`, `npm run build`, `np
 - `scripts/pi-default-git-repos.txt`: default git repo target list for update checks.
 - `scripts/run_pi_dependency_audit.py`: end-to-end static audit workflow for global pi dependency updates.
 - `scripts/summarize_pi_dependency_audit.py`: creates a markdown summary from aggregated JSON results.
+- `config.json`: default config (currently `min_update_age_hours`).
 - `rules/iocs.txt`: editable IOC seed list.
 - `templates/report.md`: manual review template.
 - `examples/sample-commands.md`: safe commands and review playbooks.
