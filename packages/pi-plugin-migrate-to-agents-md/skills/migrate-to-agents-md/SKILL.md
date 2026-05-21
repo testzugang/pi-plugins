@@ -13,9 +13,9 @@ Do not perform a blind rewrite. Present a migration plan and get user confirmati
 
 ## What Belongs Where
 
-| Destination | Content |
-| --- | --- |
-| `AGENTS.md` | Agent behavior rules, tool/workflow guidance, delegation rules, safety constraints for agents, harness-specific instructions, trigger conditions, review workflows. |
+| Destination | Content                                                                                                                                                                     |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AGENTS.md` | Agent behavior rules, tool/workflow guidance, delegation rules, safety constraints for agents, harness-specific instructions, trigger conditions, review workflows.         |
 | `CLAUDE.md` | Project overview, architecture, setup, development commands, testing notes, commit conventions, release process, team conventions that are useful as project documentation. |
 
 When content is mixed, split it conservatively. Preserve meaning over clever rewriting.
@@ -151,10 +151,10 @@ Review recommended:
 
 ## Common Mistakes
 
-| Mistake | Correction |
-| --- | --- |
-| Moving all project docs into `AGENTS.md`. | Keep general documentation in `CLAUDE.md`; move agent instructions only. |
-| Rewriting ambiguous instructions without asking. | Mark ambiguous sections for user decision. |
-| Overwriting existing `AGENTS.md` silently. | Always ask when it exists. |
-| Copying Claude Code command syntax into pi-facing docs. | Convert or flag it during migration. |
-| Writing files before showing the migration plan. | Plan first, confirmation second, edits third. |
+| Mistake                                                 | Correction                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Moving all project docs into `AGENTS.md`.               | Keep general documentation in `CLAUDE.md`; move agent instructions only. |
+| Rewriting ambiguous instructions without asking.        | Mark ambiguous sections for user decision.                               |
+| Overwriting existing `AGENTS.md` silently.              | Always ask when it exists.                                               |
+| Copying Claude Code command syntax into pi-facing docs. | Convert or flag it during migration.                                     |
+| Writing files before showing the migration plan.        | Plan first, confirmation second, edits third.                            |
