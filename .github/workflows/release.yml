@@ -11,7 +11,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-      id-token: write
+      id-token: write # ZWINGEND ERFORDERLICH für npm OIDC / Trusted Publisher und Provenance
 
     steps:
       - name: Checkout
@@ -21,7 +21,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
+          # Keine registry-url hier deklarieren, um "Failed to replace env in config: ${NODE_AUTH_TOKEN}"
+          # während des npm ci-Schritts zu verhindern. Changesets verwaltet die Registry-Ausrichtung selbst.
 
       - name: Install dependencies
         run: npm ci
@@ -38,3 +39,6 @@ jobs:
           commit: "chore: release packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Ermöglicht sowohl Token-basiertes Publizieren (falls NPM_TOKEN als Secret existiert)
+          # als auch vollautomatisches, passwortloses OIDC Trusted Publishing (falls NPM_TOKEN leer ist).
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
