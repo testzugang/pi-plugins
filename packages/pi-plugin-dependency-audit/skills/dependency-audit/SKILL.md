@@ -10,14 +10,17 @@ description: Use when you need to audit an npm package, a GitHub repository, or 
 Nutze diesen Skill, wenn TypeScript-/JavaScript-Code, ein npm-Paket, ein GitHub-Repository, ein Dependency-Update oder ein npm-Lockfile vor der Nutzung geprüft werden soll. Der Fokus liegt auf Malware- und Supply-Chain-Erkennung vor `npm install`, `npm ci`, Build, Test, Import oder IDE-/CI-Ausführung.
 
 ### Automatischer Workflow (ohne Parameter)
+
 Wenn der Skill ohne weitere Parameter aufgerufen wird (z.B. `/skill:dependency-audit`), muss **immer zuerst** eine explizite Modus-Auswahl über `user_select` erfolgen.
 
 Pflichtfrage (immer, als erster Schritt):
+
 - **"Pi-Dependencies prüfen"**
 - **"Projekt-Dependencies (aktuelles Verzeichnis) prüfen"**
 - **"Beides prüfen"**
 
 Regeln:
+
 1. Diese Auswahl darf nicht übersprungen werden, auch nicht bei fehlender `package.json`.
 2. Existiert bei Auswahl "Projekt-Dependencies" keine `package.json`, gib eine klare Rückfrage: Pfad angeben oder auf Pi-Dependencies wechseln.
 3. Starte keine Prüfung, bevor der Nutzer einen der drei Modi bestätigt hat.
@@ -25,12 +28,14 @@ Regeln:
 Führe dann je nach Auswahl die entsprechenden Szenarien aus:
 
 **Szenario A: Lokale npm-Abhängigkeiten**
+
 1. Führe `npm outdated --json` (oder ein äquivalentes Tool) aus, um die Liste verfügbarer Updates zu ermitteln.
 2. Iteriere durch die ermittelten Pakete.
 3. Führe für jedes Paket die in diesem Skill beschriebenen statischen Prüfungen durch.
 4. Generiere einen aggregierten Report.
 
 **Szenario B: Globale Pi-Erweiterungen**
+
 1. Nutze bevorzugt die mitgelieferten Hilfsskripte statt ad-hoc Bash-Loops:
    - `scripts/pi-check-current-global-versions.sh`
    - `scripts/pi-check-latest-npm-versions.sh`
@@ -49,6 +54,7 @@ Führe dann je nach Auswahl die entsprechenden Szenarien aus:
 8. Generiere einen Report, der angibt, welche Pi-Erweiterungen sicher aktualisiert werden können. **Präsentiere am Ende des Berichts immer einen maßgeschneiderten nativen `pi update`-Vorschlag (siehe Abschnitt "Natives Pi-Paketmanagement (`pi update`)"), der blockierte/quarantänisierte oder zu frische Pakete explizit auslässt.**
 
 ### Spezifischer Workflow (mit Parametern)
+
 Wenn der Skill mit einem Paketnamen oder einer Repository-URL aufgerufen wird, fokussiere die Prüfung ausschließlich auf dieses Ziel. Lade den Code in ein temporäres Verzeichnis herunter und wende die Prüfphasen statisch an.
 
 Der Skill ist bewusst auf npm und TypeScript zugeschnitten. Er prüft insbesondere:
@@ -265,6 +271,7 @@ Pi verwaltet Erweiterungen, Skills, Prompt-Templates und Themes nativ über Pake
 - **Git-Pakete (`git:github.com/user/repo`)**: Werden global nach `~/.pi/agent/git/<host>/<path>` geklont. Nach jedem `git pull` führt Pi automatisch `npm install` im geklonten Verzeichnis aus.
 
 ### Erstellung des Update-Vorschlags im Report
+
 Der Auditor muss am Ende des Berichts **immer** den passenden, maßgeschneiderten Befehl zur Durchführung der sicheren Updates vorschlagen:
 
 1. **Ausschluss-Regel**: Blockierte/quarantänisierte Pakete und zu frische Pakete (`too_fresh`, die die Altersschwelle `min_update_age_hours` unterschritten haben) dürfen **niemals** im Update-Vorschlag enthalten sein.
@@ -280,13 +287,25 @@ Der Auditor muss am Ende des Berichts **immer** den passenden, maßgeschneiderte
    ```
 
 ### Interaktive Terminal-Integration (Wrapper)
+
 Um den standardmäßigen `pi update` Befehl im Terminal abzufangen, sodass er automatisch diesen interaktiven Sicherheits-Audit triggert und eine interaktive Auswahl anbietet, kann folgende Shell-Funktion in die Shell-Konfiguration (z. B. `~/.zshrc` oder `~/.bashrc`) eingetragen werden:
 
+**If installed via GitHub/Git (legacy):**
 ```bash
-# Wrapper für pi update, um den Dependency-Audit interaktiv vorzuschalten
 pi() {
     if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
         python3 ~/.pi/agent/git/github.com/testzugang/pi-plugins/skills/dependency-audit/scripts/pi-interactive-update.py
+    else
+        command pi "$@"
+    fi
+}
+```
+
+**If installed via npm:**
+```bash
+pi() {
+    if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
+        python3 ~/.pi/packages/node_modules/@sipgate/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
     else
         command pi "$@"
     fi

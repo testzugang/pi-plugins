@@ -85,9 +85,9 @@
 
 ## Findings
 
-| Severity | File:line | Finding | Evidence | Recommendation | Status |
-|---|---|---|---|---|---|
-|  |  |  |  |  | needs-human-review |
+| Severity | File:line | Finding | Evidence | Recommendation | Status             |
+| -------- | --------- | ------- | -------- | -------------- | ------------------ |
+|          |           |         |          |                | needs-human-review |
 
 ## Decision rationale
 
