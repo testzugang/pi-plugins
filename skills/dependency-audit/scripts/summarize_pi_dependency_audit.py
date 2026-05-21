@@ -158,6 +158,23 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
     review = [i for i in updates if str(i.get("decision")) == "REVIEW_BEFORE_USE"]
     blocked = [i for i in updates if str(i.get("decision")) in {"BLOCK_UNTIL_REVIEW", "QUARANTINE"}]
 
+    def get_pi_source(item: dict[str, Any]) -> str:
+        if item.get("type") == "npm":
+            return f"npm:{item['name']}"
+        source = item.get("source")
+        if source:
+            return str(source)
+        name = item.get("name", "")
+        if name == "pi-skills":
+            return "git:github.com/fgladisch/pi-skills"
+        if name == "pi-plugins":
+            return "git:github.com/testzugang/pi-plugins"
+        if name == "pi-community-themes":
+            return "git:https://github.com/hasit/pi-community-themes"
+        return f"git:github.com/testzugang/{name}"
+
+    allowed_updates = [i for i in updates if str(i.get("decision")) not in {"BLOCK_UNTIL_REVIEW", "QUARANTINE"}]
+
     if deferred:
         md.append("## ⏱️ Deferred by Minimum Update Age")
         md.append("")
@@ -178,13 +195,27 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
     md.append(f"- Blocked/quarantine: **{len(blocked)}**")
     md.append(f"- Deferred by age gate: **{len(deferred)}**")
 
-    if safe:
-        safe_npm = [i["name"] for i in safe if i.get("type") == "npm"]
-        if safe_npm:
-            md.append("")
-            md.append("### Suggested npm update command")
+    if allowed_updates:
+        md.append("")
+        md.append("### 🚀 Suggested Update Command")
+        md.append("")
+        
+        # Check if we are skipping anything (blocked or deferred)
+        has_blocked = len(blocked) > 0
+        has_deferred = len(deferred) > 0
+        
+        if has_blocked or has_deferred:
+            md.append("Since some updates are blocked, quarantined, or too fresh, run the following selective updates:")
             md.append("```bash")
-            md.append("npm install -g " + " ".join(safe_npm))
+            cmd_lines = []
+            for item in allowed_updates:
+                cmd_lines.append(f"pi update {get_pi_source(item)}")
+            md.append(" && \\\n".join(cmd_lines))
+            md.append("```")
+        else:
+            md.append("Since all pending updates are safe and approved, you can update everything at once:")
+            md.append("```bash")
+            md.append("pi update --extensions")
             md.append("```")
 
     return "\n".join(md) + "\n"

@@ -46,7 +46,7 @@ Führe dann je nach Auswahl die entsprechenden Szenarien aus:
 5. Wenn ein Update jünger als `min_update_age_hours` ist, markiere es als `too_fresh` mit `SKIP_TOO_FRESH`.
 6. Klone/lade die übrigen Updates temporär herunter, **ohne sie zu installieren oder Scripte auszuführen**.
 7. Führe die in diesem Skill beschriebenen statischen Prüfungen auf dem neuen Code durch.
-8. Generiere einen Report, der angibt, welche Pi-Erweiterungen sicher aktualisiert werden können.
+8. Generiere einen Report, der angibt, welche Pi-Erweiterungen sicher aktualisiert werden können. **Präsentiere am Ende des Berichts immer einen maßgeschneiderten nativen `pi update`-Vorschlag (siehe Abschnitt "Natives Pi-Paketmanagement (`pi update`)"), der blockierte/quarantänisierte oder zu frische Pakete explizit auslässt.**
 
 ### Spezifischer Workflow (mit Parametern)
 Wenn der Skill mit einem Paketnamen oder einer Repository-URL aufgerufen wird, fokussiere die Prüfung ausschließlich auf dieses Ziel. Lade den Code in ein temporäres Verzeichnis herunter und wende die Prüfphasen statisch an.
@@ -256,6 +256,28 @@ npm ci --ignore-scripts --omit=optional --allow-git=none --allow-remote=none --a
 ```
 
 Wenn ein Paket legitime Native Builds oder Install-Scripts braucht, erst eine minimale Allowlist definieren, dann in einer Sandbox ohne Secrets ausführen.
+
+## Natives Pi-Paketmanagement ("pi update")
+
+Pi verwaltet Erweiterungen, Skills, Prompt-Templates und Themes nativ über Paket-Definitionen in `~/.pi/agent/settings.json` (unter `"packages"`) unter Verwendung der Protokolle `npm:` und `git:`.
+
+- **npm-Pakete (`npm:pkg-name`)**: Werden global (`npm install -g`) oder projektlokal unter `.pi/npm/` installiert.
+- **Git-Pakete (`git:github.com/user/repo`)**: Werden global nach `~/.pi/agent/git/<host>/<path>` geklont. Nach jedem `git pull` führt Pi automatisch `npm install` im geklonten Verzeichnis aus.
+
+### Erstellung des Update-Vorschlags im Report
+Der Auditor muss am Ende des Berichts **immer** den passenden, maßgeschneiderten Befehl zur Durchführung der sicheren Updates vorschlagen:
+
+1. **Ausschluss-Regel**: Blockierte/quarantänisierte Pakete und zu frische Pakete (`too_fresh`, die die Altersschwelle `min_update_age_hours` unterschritten haben) dürfen **niemals** im Update-Vorschlag enthalten sein.
+2. **Spezifischer Update-Vorschlag (Chaining)**: Wenn einzelne Pakete aufgrund von Sicherheitsbedenken oder Altersschwellen ausgelassen werden müssen, generiere einen verketteten Einzelupdate-Befehl mittels `&& \`, um nur die verifizierten Pakete gezielt zu aktualisieren:
+   ```bash
+   pi update npm:pi-mcp-adapter && \
+   pi update npm:pi-total-recall && \
+   pi update git:github.com/fgladisch/pi-skills
+   ```
+3. **Komplett-Update (Sammelbefehl)**: Wenn alle anstehenden Updates sicher sind und kein Paket ausgelassen werden muss, schlage den Sammelbefehl vor:
+   ```bash
+   pi update --extensions
+   ```
 
 ## Severity-Regeln
 
