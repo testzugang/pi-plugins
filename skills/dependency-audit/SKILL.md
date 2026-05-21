@@ -279,6 +279,22 @@ Der Auditor muss am Ende des Berichts **immer** den passenden, maßgeschneiderte
    pi update --extensions
    ```
 
+### Interaktive Terminal-Integration (Wrapper)
+Um den standardmäßigen `pi update` Befehl im Terminal abzufangen, sodass er automatisch diesen interaktiven Sicherheits-Audit triggert und eine interaktive Auswahl anbietet, kann folgende Shell-Funktion in die Shell-Konfiguration (z. B. `~/.zshrc` oder `~/.bashrc`) eingetragen werden:
+
+```bash
+# Wrapper für pi update, um den Dependency-Audit interaktiv vorzuschalten
+pi() {
+    if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
+        python3 ~/.pi/agent/git/github.com/testzugang/pi-plugins/skills/dependency-audit/scripts/pi-interactive-update.py
+    else
+        command pi "$@"
+    fi
+}
+```
+
+Nach dem Neuladen der Shell (`source ~/.zshrc`) führt jede Eingabe von `pi update` oder `pi update --extensions` direkt zu dem interaktiven Audit-Menü.
+
 ## Severity-Regeln
 
 - `CRITICAL`: bekannte IoC, Credential-Exfiltration, Download+Execute, Secret-Zugriff+Netzwerk, IDE-/Agent-Persistence mit GitHub-Write, Path-Traversal im Tarball, live Token im Paket.

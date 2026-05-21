@@ -76,11 +76,29 @@ Do not run `npm install`, `npm ci`, `npm pack`, `npm test`, `npm run build`, `np
 - `scripts/pi-default-git-repos.txt`: default git repo target list for update checks.
 - `scripts/run_pi_dependency_audit.py`: end-to-end static audit workflow for global pi dependency updates.
 - `scripts/summarize_pi_dependency_audit.py`: creates a markdown summary from aggregated JSON results.
+- `scripts/pi-interactive-update.py`: interactive CLI wrapper and menu selector for native `pi update` integration.
 - `config.json`: default config (currently `min_update_age_hours`).
 - `rules/iocs.txt`: editable IOC seed list.
 - `templates/report.md`: manual review template.
 - `examples/sample-commands.md`: safe commands and review playbooks.
 - `examples/github-actions-static-audit.yml`: example CI workflow for static-only scanning.
+
+## Interactive Shell Wrapper (`pi update` integration)
+
+To intercept the native `pi update` command in your terminal so it automatically runs this security audit first and prompts you with a selection menu of verified-safe updates, add the following wrapper function to your shell configuration (e.g., `~/.zshrc` or `~/.bashrc`):
+
+```bash
+# Wrapper for pi update to prepend dependency-audit and trigger interactive CLI selection
+pi() {
+    if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
+        python3 ~/.pi/agent/git/github.com/testzugang/pi-plugins/skills/dependency-audit/scripts/pi-interactive-update.py
+    else
+        command pi "$@"
+    fi
+}
+```
+
+After reloading your shell (`source ~/.zshrc`), typing `pi update` or `pi update --extensions` will launch the interactive audit menu before running any updates.
 
 ## Important limitation
 
