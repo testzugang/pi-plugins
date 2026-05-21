@@ -23,16 +23,16 @@ This skill exists because default audit behavior tends to drift into `CLAUDE.md`
 
 ## Audit Checklist
 
-| Area | Check |
-| --- | --- |
-| Structure | Clear title, headings, and readable markdown. |
-| Scope | Instructions are relevant for coding agents working in this repository. |
-| Precedence | No claims to override system, developer, or direct user instructions. |
-| Consistency | No duplicated, conflicting, or circular rules. |
-| Actionability | Agents can tell what to do, when to do it, and what to avoid. |
-| Tooling | Tool names and commands match the intended harness, or are written generically. |
-| Safety | No overly broad destructive automation, secret exposure, or unreviewed deployment instructions. |
-| Freshness | No stale references to removed commands, renamed files, or old workflows. |
+| Area          | Check                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| Structure     | Clear title, headings, and readable markdown.                                                   |
+| Scope         | Instructions are relevant for coding agents working in this repository.                         |
+| Precedence    | No claims to override system, developer, or direct user instructions.                           |
+| Consistency   | No duplicated, conflicting, or circular rules.                                                  |
+| Actionability | Agents can tell what to do, when to do it, and what to avoid.                                   |
+| Tooling       | Tool names and commands match the intended harness, or are written generically.                 |
+| Safety        | No overly broad destructive automation, secret exposure, or unreviewed deployment instructions. |
+| Freshness     | No stale references to removed commands, renamed files, or old workflows.                       |
 
 ## Stale Harness-Specific Leftovers
 
@@ -73,9 +73,9 @@ If there are no findings, say so clearly and still include the out-of-scope note
 
 ## Common Mistakes
 
-| Mistake | Correction |
-| --- | --- |
-| Reading `CLAUDE.md` because it might conflict. | Do not read it. The user asked for `AGENTS.md`. |
-| Rewriting the file during audit. | Report first. Edit only after an explicit follow-up request. |
-| Reporting vague advice like “improve clarity.” | Quote the unclear text and propose a concrete replacement direction. |
-| Treating every Claude-specific word as wrong. | Flag only when it is stale, incompatible, or unclear for the target harness. |
+| Mistake                                        | Correction                                                                   |
+| ---------------------------------------------- | ---------------------------------------------------------------------------- |
+| Reading `CLAUDE.md` because it might conflict. | Do not read it. The user asked for `AGENTS.md`.                              |
+| Rewriting the file during audit.               | Report first. Edit only after an explicit follow-up request.                 |
+| Reporting vague advice like “improve clarity.” | Quote the unclear text and propose a concrete replacement direction.         |
+| Treating every Claude-specific word as wrong.  | Flag only when it is stale, incompatible, or unclear for the target harness. |
