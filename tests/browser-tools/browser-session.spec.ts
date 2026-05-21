@@ -10,7 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-jest.mock("@mariozechner/pi-coding-agent", () => ({}), { virtual: true });
+jest.mock("@earendil-works/pi-coding-agent", () => ({}), { virtual: true });
 
 jest.mock(
   "typebox",

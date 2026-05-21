@@ -14,8 +14,18 @@ describe("pi-plugins package manifest", () => {
     };
 
     expect(manifest.pi).toEqual({
-      skills: ["./skills"],
-      extensions: ["./extensions"],
+      skills: [
+        "./skills",
+        "./packages/pi-plugin-migrate-to-agents-md/skills",
+        "./packages/pi-plugin-audit-agents-md/skills",
+        "./packages/pi-plugin-commit/skills",
+        "./packages/pi-plugin-pr-findings/skills",
+        "./packages/pi-plugin-dependency-audit/skills",
+      ],
+      extensions: [
+        "./extensions",
+        "./packages/pi-plugin-pr-findings/extensions",
+      ],
       prompts: ["./prompts"],
       themes: ["./themes"],
     });

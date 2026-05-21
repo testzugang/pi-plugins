@@ -1,25 +1,59 @@
 {
-  "name": "pi-plugins",
+  "name": "pi-plugins-workspace",
   "version": "0.1.0",
-  "description": "pi package with shared skills, extensions, prompt templates, and themes.",
   "private": true,
-  "keywords": ["pi-package", "pi", "skills", "extensions", "prompts", "themes"],
+  "description": "Monorepo workspace for selected shared Pi plugins.",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "skills",
+    "extensions",
+    "prompts",
+    "themes"
+  ],
   "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
   "pi": {
-    "skills": ["./skills"],
-    "extensions": ["./extensions"],
-    "prompts": ["./prompts"],
-    "themes": ["./themes"]
+    "skills": [
+      "./skills",
+      "./packages/pi-plugin-migrate-to-agents-md/skills",
+      "./packages/pi-plugin-audit-agents-md/skills",
+      "./packages/pi-plugin-commit/skills",
+      "./packages/pi-plugin-pr-findings/skills",
+      "./packages/pi-plugin-dependency-audit/skills"
+    ],
+    "extensions": [
+      "./extensions",
+      "./packages/pi-plugin-pr-findings/extensions"
+    ],
+    "prompts": [
+      "./prompts"
+    ],
+    "themes": [
+      "./themes"
+    ]
   },
   "scripts": {
+    "setup": "npm install --no-audit --no-fund",
     "validate": "node scripts/validate-package.mjs",
-    "validate:skills": "node scripts/validate-package.mjs --skills-only"
+    "validate:skills": "node scripts/validate-package.mjs --skills-only",
+    "format": "prettier '**/*.{ts,js,cjs,md,json,yml,yaml}' --write",
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish"
   },
   "dependencies": {
     "puppeteer-core": "^23.11.1"
   },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.6",
+    "@earendil-works/pi-coding-agent": "0.75.1",
+    "prettier": "^3.5.3"
+  },
   "peerDependencies": {
-    "@mariozechner/pi-coding-agent": "*",
+    "@earendil-works/pi-coding-agent": "*",
     "typebox": "*"
   }
 }
