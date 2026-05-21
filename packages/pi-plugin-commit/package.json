@@ -1,0 +1,23 @@
+{
+  "name": "@sipgate/pi-plugin-commit",
+  "version": "0.1.0",
+  "description": "Interactive gitmoji-based commit skill with staged review for Pi",
+  "keywords": ["pi-package"],
+  "license": "MIT",
+  "files": [
+    "skills",
+    "README.md"
+  ],
+  "pi": {
+    "skills": [
+      "./skills"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

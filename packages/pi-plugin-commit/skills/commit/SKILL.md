@@ -34,18 +34,18 @@ Do not commit without explicit confirmation.
 
 ## Gitmoji Reference
 
-| Emoji | Use when |
-| --- | --- |
-| ✨ | adding a feature or new capability |
-| 🐛 | fixing a bug |
-| 🔧 | changing configuration, tooling, or package setup |
-| ♻️ | refactoring without behavior change |
-| ✅ | adding or updating tests |
-| 📝 | changing documentation |
-| 🎨 | formatting or code style only |
-| ⚡ | improving performance |
-| 🔥 | removing code or files |
-| 🔖 | release commits |
+| Emoji | Use when                                          |
+| ----- | ------------------------------------------------- |
+| ✨    | adding a feature or new capability                |
+| 🐛    | fixing a bug                                      |
+| 🔧    | changing configuration, tooling, or package setup |
+| ♻️    | refactoring without behavior change               |
+| ✅    | adding or updating tests                          |
+| 📝    | changing documentation                            |
+| 🎨    | formatting or code style only                     |
+| ⚡    | improving performance                             |
+| 🔥    | removing code or files                            |
+| 🔖    | release commits                                   |
 
 Follow the repository's existing commit style when it is more specific than this table.
 
@@ -122,11 +122,11 @@ If a hook fails:
 
 ## Common Mistakes
 
-| Mistake | Correction |
-| --- | --- |
-| Committing without reading the staged diff. | Always inspect staged changes first. |
-| Staging all files automatically. | Ask before staging unless explicitly requested. |
-| Asking the same confirmation twice. | Use one staging confirmation (only if needed) and one final commit confirmation. |
-| Writing a message with no “why.” | Ask for motivation and include it in the body. |
-| Choosing a gitmoji silently when ambiguous. | Offer likely options with `user_select`. |
-| Using `--no-verify` by default. | Only use it when explicitly requested. |
+| Mistake                                     | Correction                                                                       |
+| ------------------------------------------- | -------------------------------------------------------------------------------- |
+| Committing without reading the staged diff. | Always inspect staged changes first.                                             |
+| Staging all files automatically.            | Ask before staging unless explicitly requested.                                  |
+| Asking the same confirmation twice.         | Use one staging confirmation (only if needed) and one final commit confirmation. |
+| Writing a message with no “why.”            | Ask for motivation and include it in the body.                                   |
+| Choosing a gitmoji silently when ambiguous. | Offer likely options with `user_select`.                                         |
+| Using `--no-verify` by default.             | Only use it when explicitly requested.                                           |
