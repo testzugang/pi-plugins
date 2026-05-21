@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
 type ExecResult = {
@@ -122,7 +122,9 @@ export default function registerPrFindings(pi: ExtensionAPI) {
         Type.Boolean({ description: "Include stale findings on old commits" }),
       ),
       mine: Type.Optional(
-        Type.Boolean({ description: "Show only findings authored by current gh user" }),
+        Type.Boolean({
+          description: "Show only findings authored by current gh user",
+        }),
       ),
       waitForNextReview: Type.Optional(
         Type.Boolean({
@@ -143,7 +145,8 @@ export default function registerPrFindings(pi: ExtensionAPI) {
       ),
       waitPollSec: Type.Optional(
         Type.Number({
-          description: "Polling interval for waiting mode in seconds (default 30)",
+          description:
+            "Polling interval for waiting mode in seconds (default 30)",
         }),
       ),
     }),
@@ -157,12 +160,22 @@ export default function registerPrFindings(pi: ExtensionAPI) {
       let waitSummary = "";
       if (options.waitForNextReview) {
         if (options.waitMode === "checks-finished") {
-          const waited = await waitForChecksFinished(pi, repo, prNumber, options);
+          const waited = await waitForChecksFinished(
+            pi,
+            repo,
+            prNumber,
+            options,
+          );
           waitSummary = waited
             ? "Waited for checks to finish before collecting findings."
             : "Wait timeout reached before checks finished; collected current findings.";
         } else {
-          const waited = await waitForNewReviewActivity(pi, repo, prNumber, options);
+          const waited = await waitForNewReviewActivity(
+            pi,
+            repo,
+            prNumber,
+            options,
+          );
           waitSummary = waited
             ? "Detected new review activity before collecting findings."
             : "Wait timeout reached before new review activity; collected current findings.";
@@ -262,7 +275,14 @@ async function ensureGhAvailable(pi: ExtensionAPI): Promise<void> {
 
 async function resolveRepo(pi: ExtensionAPI, repo?: string): Promise<string> {
   if (repo) return repo;
-  const resolved = await ghText(pi, ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"]);
+  const resolved = await ghText(pi, [
+    "repo",
+    "view",
+    "--json",
+    "nameWithOwner",
+    "-q",
+    ".nameWithOwner",
+  ]);
   if (!resolved) {
     throw new Error("cannot determine repo — pass repo as owner/repo");
   }
@@ -331,7 +351,10 @@ async function waitForChecksFinished(
   return false;
 }
 
-function hasNewActivity(current: ActivitySnapshot, baseline: ActivitySnapshot): boolean {
+function hasNewActivity(
+  current: ActivitySnapshot,
+  baseline: ActivitySnapshot,
+): boolean {
   if (current.summaryCount > baseline.summaryCount) return true;
   if (current.inlineCount > baseline.inlineCount) return true;
   if (current.latestAtMs > baseline.latestAtMs) return true;
@@ -346,28 +369,22 @@ async function fetchActivitySnapshot(
   const prView = await ghJson<{
     comments?: Array<{ createdAt?: string }>;
     reviews?: Array<{ submittedAt?: string }>;
-  }>(
-    pi,
-    [
-      "pr",
-      "view",
-      String(prNumber),
-      "-R",
-      repo,
-      "--json",
-      "comments,reviews",
-    ],
-  );
+  }>(pi, [
+    "pr",
+    "view",
+    String(prNumber),
+    "-R",
+    repo,
+    "--json",
+    "comments,reviews",
+  ]);
 
-  const inline = await ghJson<Array<{ created_at?: string }>>(
-    pi,
-    [
-      "api",
-      "-H",
-      "Accept: application/vnd.github+json",
-      `repos/${repo}/pulls/${prNumber}/comments?per_page=100`,
-    ],
-  );
+  const inline = await ghJson<Array<{ created_at?: string }>>(pi, [
+    "api",
+    "-H",
+    "Accept: application/vnd.github+json",
+    `repos/${repo}/pulls/${prNumber}/comments?per_page=100`,
+  ]);
 
   const summaryTimes = [
     ...(prView.comments ?? []).map((c) => c.createdAt ?? ""),
@@ -380,7 +397,8 @@ async function fetchActivitySnapshot(
   );
 
   return {
-    summaryCount: (prView.comments ?? []).length + (prView.reviews ?? []).length,
+    summaryCount:
+      (prView.comments ?? []).length + (prView.reviews ?? []).length,
     inlineCount: (inline ?? []).length,
     latestAtMs,
   };
@@ -426,18 +444,15 @@ async function fetchFindingsData(
       detailsUrl?: string;
       targetUrl?: string;
     }>;
-  }>(
-    pi,
-    [
-      "pr",
-      "view",
-      String(prNumber),
-      "-R",
-      repo,
-      "--json",
-      "number,state,headRefOid,url,comments,reviews,statusCheckRollup",
-    ],
-  );
+  }>(pi, [
+    "pr",
+    "view",
+    String(prNumber),
+    "-R",
+    repo,
+    "--json",
+    "number,state,headRefOid,url,comments,reviews,statusCheckRollup",
+  ]);
 
   const inline = await ghJson<
     Array<{
@@ -451,15 +466,12 @@ async function fetchFindingsData(
       commit_id?: string;
       html_url?: string;
     }>
-  >(
-    pi,
-    [
-      "api",
-      "-H",
-      "Accept: application/vnd.github+json",
-      `repos/${owner}/${name}/pulls/${prNumber}/comments?per_page=100`,
-    ],
-  );
+  >(pi, [
+    "api",
+    "-H",
+    "Accept: application/vnd.github+json",
+    `repos/${owner}/${name}/pulls/${prNumber}/comments?per_page=100`,
+  ]);
 
   const threads = await ghJson<{
     data?: {
@@ -475,21 +487,18 @@ async function fetchFindingsData(
         };
       };
     };
-  }>(
-    pi,
-    [
-      "api",
-      "graphql",
-      "-f",
-      "query=query($owner:String!,$name:String!,$num:Int!){repository(owner:$owner,name:$name){pullRequest(number:$num){reviewThreads(first:100){nodes{isResolved isOutdated comments(first:100){nodes{databaseId}}}}}}}",
-      "-F",
-      `owner=${owner}`,
-      "-F",
-      `name=${name}`,
-      "-F",
-      `num=${prNumber}`,
-    ],
-  );
+  }>(pi, [
+    "api",
+    "graphql",
+    "-f",
+    "query=query($owner:String!,$name:String!,$num:Int!){repository(owner:$owner,name:$name){pullRequest(number:$num){reviewThreads(first:100){nodes{isResolved isOutdated comments(first:100){nodes{databaseId}}}}}}}",
+    "-F",
+    `owner=${owner}`,
+    "-F",
+    `name=${name}`,
+    "-F",
+    `num=${prNumber}`,
+  ]);
 
   const viewerLogin = await ghText(pi, ["api", "user", "-q", ".login"]);
 
@@ -517,7 +526,10 @@ async function fetchFindingsData(
 
   const inlineComments: InlineComment[] = (inline ?? []).map((c) => {
     const id = String(c.id ?? "");
-    const resolved = resolvedMap[id] ?? { isOutdated: false, isResolved: false };
+    const resolved = resolvedMap[id] ?? {
+      isOutdated: false,
+      isResolved: false,
+    };
     return {
       id,
       author: c.user?.login ?? "unknown",
@@ -591,7 +603,9 @@ async function ensureGhVersion(pi: ExtensionAPI): Promise<void> {
   const major = Number.parseInt(majorText ?? "0", 10);
   const minor = Number.parseInt(minorText ?? "0", 10);
   if (major < 2 || (major === 2 && minor < 40)) {
-    throw new Error(`gh ${raw || "unknown"} is too old — need >= 2.40 for statusCheckRollup`);
+    throw new Error(
+      `gh ${raw || "unknown"} is too old — need >= 2.40 for statusCheckRollup`,
+    );
   }
 }
 
@@ -602,18 +616,15 @@ async function fetchChecks(
 ): Promise<Array<{ conclusion?: string; state?: string }>> {
   const prView = await ghJson<{
     statusCheckRollup?: Array<{ conclusion?: string; state?: string }>;
-  }>(
-    pi,
-    [
-      "pr",
-      "view",
-      String(prNumber),
-      "-R",
-      repo,
-      "--json",
-      "statusCheckRollup",
-    ],
-  );
+  }>(pi, [
+    "pr",
+    "view",
+    String(prNumber),
+    "-R",
+    repo,
+    "--json",
+    "statusCheckRollup",
+  ]);
 
   return prView.statusCheckRollup ?? [];
 }
@@ -624,7 +635,13 @@ function allChecksTerminal(
   if (checks.length === 0) return true;
   return checks.every((check) => {
     const value = (check.conclusion ?? check.state ?? "").toUpperCase();
-    return !["PENDING", "IN_PROGRESS", "QUEUED", "WAITING", "REQUESTED"].includes(value);
+    return ![
+      "PENDING",
+      "IN_PROGRESS",
+      "QUEUED",
+      "WAITING",
+      "REQUESTED",
+    ].includes(value);
   });
 }
 
@@ -725,7 +742,10 @@ function renderMarkdown(data: FindingsData, options: FindingsOptions): string {
     );
   }
 
-  const total = Object.values(findings).reduce((sum, items) => sum + items.length, 0);
+  const total = Object.values(findings).reduce(
+    (sum, items) => sum + items.length,
+    0,
+  );
   if (total === 0) {
     parts.push("\n_No findings._");
   }
@@ -739,10 +759,21 @@ function classify(body: string): "blocker" | "warning" | "nit" | "info" {
   if (matchesAny(text, ["🔴", "blocker", "must fix", "critical", "breaks"])) {
     return "blocker";
   }
-  if (matchesAny(text, ["🟡", "warning", "should", "leak", "race", "missing"])) {
+  if (
+    matchesAny(text, ["🟡", "warning", "should", "leak", "race", "missing"])
+  ) {
     return "warning";
   }
-  if (matchesAny(text, ["🔵", "nit", "suggestion", "consider", "could be", "minor"])) {
+  if (
+    matchesAny(text, [
+      "🔵",
+      "nit",
+      "suggestion",
+      "consider",
+      "could be",
+      "minor",
+    ])
+  ) {
     return "nit";
   }
   if (matchesAny(text, ["approved", "lgtm", "strength", "looks good"])) {
@@ -754,7 +785,12 @@ function classify(body: string): "blocker" | "warning" | "nit" | "info" {
 
 function matchesAny(text: string, patterns: string[]): boolean {
   return patterns.some((pattern) => {
-    if (pattern.length === 1 || pattern.includes("🔴") || pattern.includes("🟡") || pattern.includes("🔵")) {
+    if (
+      pattern.length === 1 ||
+      pattern.includes("🔴") ||
+      pattern.includes("🟡") ||
+      pattern.includes("🔵")
+    ) {
       return text.includes(pattern.toLowerCase());
     }
     return new RegExp(`\\b${escapeRegex(pattern)}\\b`, "i").test(text);
@@ -765,19 +801,27 @@ function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function splitBotSummary(
-  body: string,
-): Array<{ severity: "blocker" | "warning" | "nit" | "info"; item: string }> | null {
-  const sectionHeaderRe = new RegExp(SECTION_HEADER_RE.source, SECTION_HEADER_RE.flags);
+function splitBotSummary(body: string): Array<{
+  severity: "blocker" | "warning" | "nit" | "info";
+  item: string;
+}> | null {
+  const sectionHeaderRe = new RegExp(
+    SECTION_HEADER_RE.source,
+    SECTION_HEADER_RE.flags,
+  );
   const matches = Array.from(body.matchAll(sectionHeaderRe));
   if (matches.length === 0) return null;
 
-  const out: Array<{ severity: "blocker" | "warning" | "nit" | "info"; item: string }> = [];
+  const out: Array<{
+    severity: "blocker" | "warning" | "nit" | "info";
+    item: string;
+  }> = [];
 
   for (let i = 0; i < matches.length; i += 1) {
     const current = matches[i];
     const section = current?.[1] ?? "";
-    const start = current?.index !== undefined ? current.index + current[0].length : 0;
+    const start =
+      current?.index !== undefined ? current.index + current[0].length : 0;
     const end =
       i + 1 < matches.length && matches[i + 1]?.index !== undefined
         ? (matches[i + 1]?.index as number)
@@ -803,7 +847,9 @@ function splitBotSummary(
   return out.length > 0 ? out : null;
 }
 
-function sectionToSeverity(section: string): "blocker" | "warning" | "nit" | "info" {
+function sectionToSeverity(
+  section: string,
+): "blocker" | "warning" | "nit" | "info" {
   const value = section.toLowerCase();
   if (value.includes("blocker")) return "blocker";
   if (value.includes("warning")) return "warning";
@@ -896,7 +942,11 @@ async function ghJson<T>(pi: ExtensionAPI, args: string[]): Promise<T> {
 }
 
 function formatGhError(result: ExecResult): string {
-  const raw = (result.stderr?.trim() || result.stdout?.trim() || "gh command failed").trim();
+  const raw = (
+    result.stderr?.trim() ||
+    result.stdout?.trim() ||
+    "gh command failed"
+  ).trim();
   if (raw.includes("authentication") || raw.includes("gh auth login")) {
     return "gh is not authenticated. Run `gh auth login`.";
   }

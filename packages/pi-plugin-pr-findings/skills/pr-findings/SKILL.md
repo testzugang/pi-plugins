@@ -47,6 +47,7 @@ pr_findings({
 ```
 
 Default wait behavior when enabled:
+
 - `waitMode="new-review-activity"`
 - `waitTimeoutSec=60`
 - `waitPollSec=30`
@@ -61,11 +62,11 @@ pr_findings({ waitForNextReview: true, unresolved: true })
 
 ## Edge Cases
 
-| Situation | Response |
-| --- | --- |
-| `gh` not authenticated | Tell the user to run `gh auth login`. |
-| No PR for current branch | Ask for a PR number. |
-| Cannot determine repository | Ask for `owner/repo`. |
-| PR is closed or merged | Still fetch findings; report includes PR state. |
-| `gh` too old | Surface error requiring `gh >= 2.40`. |
-| Wait timed out | Report that timeout was reached and show current findings. |
+| Situation                   | Response                                                   |
+| --------------------------- | ---------------------------------------------------------- |
+| `gh` not authenticated      | Tell the user to run `gh auth login`.                      |
+| No PR for current branch    | Ask for a PR number.                                       |
+| Cannot determine repository | Ask for `owner/repo`.                                      |
+| PR is closed or merged      | Still fetch findings; report includes PR state.            |
+| `gh` too old                | Surface error requiring `gh >= 2.40`.                      |
+| Wait timed out              | Report that timeout was reached and show current findings. |
