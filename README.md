@@ -154,11 +154,26 @@ When run without parameters, the skill asks first whether to audit pi dependenci
 /skill:dependency-audit https://github.com/user/repo
 ```
 
-For reusable global-pi checks (instead of ad-hoc shell loops), see:
+For reusable global-pi checks and interactive terminal updates, see:
 - `skills/dependency-audit/scripts/pi-check-*.sh`
 - `skills/dependency-audit/scripts/run_pi_dependency_audit.py`
 - `skills/dependency-audit/scripts/summarize_pi_dependency_audit.py`
+- `skills/dependency-audit/scripts/pi-interactive-update.py` (interactive CLI selector)
 - `skills/dependency-audit/config.json` (default age-gate: 24h)
+
+#### Pimp `pi update` with security checks
+
+To automatically run the security audit and launch the interactive selection menu every time you type `pi update` or `pi update --extensions` in your terminal, add this function to your shell configuration (e.g., `~/.zshrc`):
+
+```bash
+pi() {
+    if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
+        python3 ~/.pi/agent/git/github.com/testzugang/pi-plugins/skills/dependency-audit/scripts/pi-interactive-update.py
+    else
+        command pi "$@"
+    fi
+}
+```
 
 ### Browser tools
 
