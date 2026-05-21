@@ -1,6 +1,6 @@
 # pi-plugins
 
-pi package for shared agent workflows. The repository is a home for pi resources such as skills, extensions, prompt templates, and themes.
+pi package for shared agent workflows. The repository is structured as a monorepo containing modular, published packages under [`packages/`](packages/), while [`skills/`](skills/) and [`extensions/`](extensions/) contain unmigrated shared resources.
 
 ## Install
 
@@ -26,6 +26,16 @@ Or from another directory:
 pi install /path/to/pi-plugins
 ```
 
+### From npm (Individual packages)
+
+The following selected plugins are published to npm and can be installed individually:
+
+- **[`migrate-to-agents-md`](packages/pi-plugin-migrate-to-agents-md)**: `pi install npm:@sipgate/pi-plugin-migrate-to-agents-md`
+- **[`audit-agents-md`](packages/pi-plugin-audit-agents-md)**: `pi install npm:@sipgate/pi-plugin-audit-agents-md`
+- **[`commit`](packages/pi-plugin-commit)**: `pi install npm:@sipgate/pi-plugin-commit`
+- **[`pr-findings`](packages/pi-plugin-pr-findings)**: `pi install npm:@sipgate/pi-plugin-pr-findings`
+- **[`dependency-audit`](packages/pi-plugin-dependency-audit)**: `pi install npm:@sipgate/pi-plugin-dependency-audit`
+
 After installation, restart pi or run:
 
 ```text
@@ -34,7 +44,7 @@ After installation, restart pi or run:
 
 ## Feature quick start
 
-### `migrate-to-agents-md`
+### [`migrate-to-agents-md`](packages/pi-plugin-migrate-to-agents-md)
 
 Migrates agent-specific instructions from `CLAUDE.md` to `AGENTS.md`.
 
@@ -46,7 +56,7 @@ Install the package, then run:
 
 Use when you want to split existing Claude/project instructions into a dedicated `AGENTS.md` file.
 
-### `audit-agents-md`
+### [`audit-agents-md`](packages/pi-plugin-audit-agents-md)
 
 Audits only `AGENTS.md` for clarity, contradictions, stale harness-specific instructions, and unsafe automation guidance.
 
@@ -58,7 +68,7 @@ Install the package, then run:
 
 Use after creating or editing `AGENTS.md`.
 
-### `commit`
+### [`commit`](packages/pi-plugin-commit)
 
 Creates gitmoji commits with staged-diff review, motivation, message proposal, and confirmation.
 
@@ -70,7 +80,7 @@ Install the package, stage your changes, then run:
 
 The skill asks for motivation, proposes a commit message, and confirms before running `git commit`.
 
-### `pr-findings`
+### [`pr-findings`](packages/pi-plugin-pr-findings)
 
 Fetches GitHub PR review findings via `gh` and groups them by severity.
 
@@ -102,7 +112,7 @@ pr_findings({ waitForNextReview: true, waitTimeoutSec: 60, waitPollSec: 30 })
 
 `waitForNextReview` is useful right after a push so findings are only read after fresh review activity (default wait mode: `new-review-activity`).
 
-### `grill-with-docs`
+### [`grill-with-docs`](skills/grill-with-docs)
 
 Stress-tests a plan against the existing domain model (`CONTEXT.md`) and architectural decisions (`docs/adr/`).
 
@@ -112,9 +122,9 @@ Install the package, then run:
 /skill:grill-with-docs
 ```
 
-*Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills).*
+_Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills)._
 
-### `improve-codebase-architecture`
+### [`improve-codebase-architecture`](skills/improve-codebase-architecture)
 
 Surfaces architectural friction and proposes deepening opportunities based on domain language.
 
@@ -124,9 +134,9 @@ Install the package, then run:
 /skill:improve-codebase-architecture
 ```
 
-*Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills).*
+_Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills)._
 
-### `handoff`
+### [`handoff`](skills/handoff)
 
 Compacts the current conversation into a document for another agent or session.
 
@@ -136,9 +146,9 @@ Install the package, then run:
 /skill:handoff
 ```
 
-*Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills).*
+_Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills)._
 
-### `dependency-audit`
+### [`dependency-audit`](packages/pi-plugin-dependency-audit)
 
 Static-first review of TypeScript dependencies, npm packages, and GitHub repositories for supply-chain malware and risky scripts.
 
@@ -155,11 +165,12 @@ When run without parameters, the skill asks first whether to audit pi dependenci
 ```
 
 For reusable global-pi checks and interactive terminal updates, see:
-- `skills/dependency-audit/scripts/pi-check-*.sh`
-- `skills/dependency-audit/scripts/run_pi_dependency_audit.py`
-- `skills/dependency-audit/scripts/summarize_pi_dependency_audit.py`
-- `skills/dependency-audit/scripts/pi-interactive-update.py` (interactive CLI selector)
-- `skills/dependency-audit/config.json` (default age-gate: 24h)
+
+- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-check-*.sh`](packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts)
+- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py`](packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py)
+- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py`](packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py)
+- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py`](packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py) (interactive CLI selector)
+- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/config.json`](packages/pi-plugin-dependency-audit/skills/dependency-audit/config.json) (default age-gate: 24h)
 
 #### Pimp `pi update` with security checks
 
@@ -168,14 +179,14 @@ To automatically run the security audit and launch the interactive selection men
 ```bash
 pi() {
     if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
-        python3 ~/.pi/agent/git/github.com/testzugang/pi-plugins/skills/dependency-audit/scripts/pi-interactive-update.py
+        python3 ~/.pi/agent/git/github.com/testzugang/pi-plugins/packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
     else
         command pi "$@"
     fi
 }
 ```
 
-### Browser tools
+### [`browser-tools`](skills/browser-tools)
 
 Starts and controls a Chrome browser automation session through pi commands and agent tools.
 
@@ -214,32 +225,35 @@ Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project 
 
 ### Skills
 
-- `migrate-to-agents-md`
-- `audit-agents-md`
-- `commit`
-- `pr-findings`
-- `browser-tools`
-- `grill-with-docs`
-- `improve-codebase-architecture`
-- `handoff`
-- `dependency-audit`
+- [`migrate-to-agents-md`](packages/pi-plugin-migrate-to-agents-md)
+- [`audit-agents-md`](packages/pi-plugin-audit-agents-md)
+- [`commit`](packages/pi-plugin-commit)
+- [`pr-findings`](packages/pi-plugin-pr-findings)
+- [`browser-tools`](skills/browser-tools)
+- [`grill-with-docs`](skills/grill-with-docs)
+- [`improve-codebase-architecture`](skills/improve-codebase-architecture)
+- [`handoff`](skills/handoff)
+- [`dependency-audit`](packages/pi-plugin-dependency-audit)
 
 ### Extensions
 
-- `browser-tools`
-- `pr-findings`
+- [`browser-tools`](extensions/browser-tools)
+- [`pr-findings`](packages/pi-plugin-pr-findings)
 
 ## Repository layout
 
+The repository uses a monorepo structure where modular, high-maturity plugins are isolated as independent NPM packages inside the [`packages/`](packages/) directory. Unmigrated or legacy shared agent resources reside in the root [`skills/`](skills/) and [`extensions/`](extensions/) directories.
+
 ```text
 pi-plugins/
-  skills/                 # Agent Skills (`<skill-name>/SKILL.md`)
-  extensions/             # pi extensions (`*.ts` or `<name>/index.ts`)
-  prompts/                # Prompt templates (`*.md`)
-  themes/                 # TUI themes (`*.json`)
-  scripts/                # Validation, helper scripts, and packaged tool scripts
-    browser-tools/        # Helper scripts used by the browser-tools extension
-  tests/                  # Skill pressure scenarios and package checks
+  packages/               # Published independent npm packages (Monorepo Workspaces)
+    pi-plugin-xxx/        # Package workspace containing its own package.json, SKILL.md and assets
+  skills/                 # Remaining unmigrated shared Agent Skills (legacy root)
+  extensions/             # Remaining unmigrated shared extensions (legacy root)
+  prompts/                # Shared Prompt templates
+  themes/                 # Shared TUI themes
+  scripts/                # Shared validation and utility scripts
+  tests/                  # Shared test suites and package-manifest checks
 ```
 
 Empty resource directories contain `.gitkeep` files until their first resource is added.
