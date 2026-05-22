@@ -1,11 +1,11 @@
-# @sipgate/pi-plugin-pr-findings
+# @testzugang/pi-plugin-pr-findings
 
 Fetch and group GitHub PR review findings by severity in Pi.
 
 ## Install
 
 ```bash
-pi install npm:@sipgate/pi-plugin-pr-findings
+pi install npm:@testzugang/pi-plugin-pr-findings
 ```
 
 ## Usage

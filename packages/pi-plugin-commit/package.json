@@ -1,5 +1,5 @@
 {
-  "name": "@sipgate/pi-plugin-commit",
+  "name": "@testzugang/pi-plugin-commit",
   "version": "0.1.0",
   "description": "Interactive gitmoji-based commit skill with staged review for Pi",
   "keywords": [

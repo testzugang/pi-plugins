@@ -205,7 +205,7 @@ Create `packages/pi-plugin-migrate-to-agents-md/package.json` enabling access pu
 
 ```json
 {
-  "name": "@sipgate/pi-plugin-migrate-to-agents-md",
+  "name": "@testzugang/pi-plugin-migrate-to-agents-md",
   "version": "0.1.0",
   "description": "Pi skill to migrate agent instructions from CLAUDE.md to AGENTS.md",
   "keywords": ["pi-package"],
@@ -229,14 +229,14 @@ Create `packages/pi-plugin-migrate-to-agents-md/package.json` enabling access pu
 Create `packages/pi-plugin-migrate-to-agents-md/README.md`:
 
 ````markdown
-# @sipgate/pi-plugin-migrate-to-agents-md
+# @testzugang/pi-plugin-migrate-to-agents-md
 
 Pi skill to migrate agent instructions from CLAUDE.md to AGENTS.md.
 
 ## Install
 
 ```bash
-pi install npm:@sipgate/pi-plugin-migrate-to-agents-md
+pi install npm:@testzugang/pi-plugin-migrate-to-agents-md
 ```
 ````
 
@@ -281,7 +281,7 @@ Create `packages/pi-plugin-audit-agents-md/package.json` enabling access public 
 
 ```json
 {
-  "name": "@sipgate/pi-plugin-audit-agents-md",
+  "name": "@testzugang/pi-plugin-audit-agents-md",
   "version": "0.1.0",
   "description": "Pi skill to audit AGENTS.md for clarity and safety rule violations",
   "keywords": ["pi-package"],
@@ -305,14 +305,14 @@ Create `packages/pi-plugin-audit-agents-md/package.json` enabling access public 
 Create `packages/pi-plugin-audit-agents-md/README.md`:
 
 ````markdown
-# @sipgate/pi-plugin-audit-agents-md
+# @testzugang/pi-plugin-audit-agents-md
 
 Pi skill to audit AGENTS.md for clarity and safety rule violations.
 
 ## Install
 
 ```bash
-pi install npm:@sipgate/pi-plugin-audit-agents-md
+pi install npm:@testzugang/pi-plugin-audit-agents-md
 ```
 ````
 
@@ -357,7 +357,7 @@ Create `packages/pi-plugin-commit/package.json` enabling access public and crypt
 
 ```json
 {
-  "name": "@sipgate/pi-plugin-commit",
+  "name": "@testzugang/pi-plugin-commit",
   "version": "0.1.0",
   "description": "Interactive gitmoji-based commit skill with staged review for Pi",
   "keywords": ["pi-package"],
@@ -381,14 +381,14 @@ Create `packages/pi-plugin-commit/package.json` enabling access public and crypt
 Create `packages/pi-plugin-commit/README.md`:
 
 ````markdown
-# @sipgate/pi-plugin-commit
+# @testzugang/pi-plugin-commit
 
 Interactive gitmoji-based commit skill with staged review for Pi.
 
 ## Install
 
 ```bash
-pi install npm:@sipgate/pi-plugin-commit
+pi install npm:@testzugang/pi-plugin-commit
 ```
 ````
 
@@ -448,7 +448,7 @@ Create `packages/pi-plugin-pr-findings/package.json` enabling access public and 
 
 ```json
 {
-  "name": "@sipgate/pi-plugin-pr-findings",
+  "name": "@testzugang/pi-plugin-pr-findings",
   "version": "0.1.0",
   "description": "Fetch and group GitHub PR review findings by severity in Pi",
   "keywords": ["pi-package"],
@@ -474,14 +474,14 @@ Create `packages/pi-plugin-pr-findings/package.json` enabling access public and 
 Create `packages/pi-plugin-pr-findings/README.md`:
 
 ````markdown
-# @sipgate/pi-plugin-pr-findings
+# @testzugang/pi-plugin-pr-findings
 
 Fetch and group GitHub PR review findings by severity in Pi.
 
 ## Install
 
 ```bash
-pi install npm:@sipgate/pi-plugin-pr-findings
+pi install npm:@testzugang/pi-plugin-pr-findings
 ```
 ````
 
@@ -547,7 +547,7 @@ pi() {
 ```bash
 pi() {
     if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
-        python3 ~/.pi/packages/node_modules/@sipgate/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
+        python3 ~/.pi/packages/node_modules/@testzugang/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
     else
         command pi "$@"
     fi
@@ -562,7 +562,7 @@ Create `packages/pi-plugin-dependency-audit/package.json` enabling access public
 
 ```json
 {
-  "name": "@sipgate/pi-plugin-dependency-audit",
+  "name": "@testzugang/pi-plugin-dependency-audit",
   "version": "0.1.0",
   "description": "Static dependency and supply-chain malware auditing skill for Pi",
   "keywords": ["pi-package"],
@@ -591,14 +591,14 @@ Create `packages/pi-plugin-dependency-audit/package.json` enabling access public
 Create `packages/pi-plugin-dependency-audit/README.md`:
 
 ````markdown
-# @sipgate/pi-plugin-dependency-audit
+# @testzugang/pi-plugin-dependency-audit
 
 Static dependency and supply-chain malware auditing skill for Pi.
 
 ## Install
 
 ```bash
-pi install npm:@sipgate/pi-plugin-dependency-audit
+pi install npm:@testzugang/pi-plugin-dependency-audit
 ```
 ````
 
@@ -915,11 +915,11 @@ Modify the "Install" section to include npm installations:
 
 The following selected plugins are published to npm and can be installed individually:
 
-- **`migrate-to-agents-md`**: `pi install npm:@sipgate/pi-plugin-migrate-to-agents-md`
-- **`audit-agents-md`**: `pi install npm:@sipgate/pi-plugin-audit-agents-md`
-- **`commit`**: `pi install npm:@sipgate/pi-plugin-commit`
-- **`pr-findings`**: `pi install npm:@sipgate/pi-plugin-pr-findings`
-- **`dependency-audit`**: `pi install npm:@sipgate/pi-plugin-dependency-audit`
+- **`migrate-to-agents-md`**: `pi install npm:@testzugang/pi-plugin-migrate-to-agents-md`
+- **`audit-agents-md`**: `pi install npm:@testzugang/pi-plugin-audit-agents-md`
+- **`commit`**: `pi install npm:@testzugang/pi-plugin-commit`
+- **`pr-findings`**: `pi install npm:@testzugang/pi-plugin-pr-findings`
+- **`dependency-audit`**: `pi install npm:@testzugang/pi-plugin-dependency-audit`
 ```
 
 Update the "Repository layout" section to include `packages/`:

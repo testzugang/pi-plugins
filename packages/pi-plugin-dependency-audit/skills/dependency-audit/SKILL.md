@@ -305,7 +305,7 @@ pi() {
 ```bash
 pi() {
     if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
-        python3 ~/.pi/packages/node_modules/@sipgate/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
+        python3 ~/.pi/packages/node_modules/@testzugang/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
     else
         command pi "$@"
     fi

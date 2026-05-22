@@ -30,11 +30,11 @@ pi install /path/to/pi-plugins
 
 The following selected plugins are published to npm and can be installed individually:
 
-- **[`migrate-to-agents-md`](packages/pi-plugin-migrate-to-agents-md)**: `pi install npm:@sipgate/pi-plugin-migrate-to-agents-md`
-- **[`audit-agents-md`](packages/pi-plugin-audit-agents-md)**: `pi install npm:@sipgate/pi-plugin-audit-agents-md`
-- **[`commit`](packages/pi-plugin-commit)**: `pi install npm:@sipgate/pi-plugin-commit`
-- **[`pr-findings`](packages/pi-plugin-pr-findings)**: `pi install npm:@sipgate/pi-plugin-pr-findings`
-- **[`dependency-audit`](packages/pi-plugin-dependency-audit)**: `pi install npm:@sipgate/pi-plugin-dependency-audit`
+- **[`migrate-to-agents-md`](packages/pi-plugin-migrate-to-agents-md)**: `pi install npm:@testzugang/pi-plugin-migrate-to-agents-md`
+- **[`audit-agents-md`](packages/pi-plugin-audit-agents-md)**: `pi install npm:@testzugang/pi-plugin-audit-agents-md`
+- **[`commit`](packages/pi-plugin-commit)**: `pi install npm:@testzugang/pi-plugin-commit`
+- **[`pr-findings`](packages/pi-plugin-pr-findings)**: `pi install npm:@testzugang/pi-plugin-pr-findings`
+- **[`dependency-audit`](packages/pi-plugin-dependency-audit)**: `pi install npm:@testzugang/pi-plugin-dependency-audit`
 
 After installation, restart pi or run:
 

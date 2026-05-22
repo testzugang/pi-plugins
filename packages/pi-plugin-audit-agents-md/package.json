@@ -1,5 +1,5 @@
 {
-  "name": "@sipgate/pi-plugin-audit-agents-md",
+  "name": "@testzugang/pi-plugin-audit-agents-md",
   "version": "0.1.0",
   "description": "Pi skill to audit AGENTS.md for clarity and safety rule violations",
   "keywords": [
