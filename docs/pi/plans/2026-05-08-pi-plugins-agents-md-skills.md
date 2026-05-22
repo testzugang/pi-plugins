@@ -22,6 +22,7 @@
 ## Task 1: Initialize repository skeleton
 
 **Files:**
+
 - Create: `package.json`
 - Create: `README.md`
 - Create: `.gitignore`
@@ -51,7 +52,7 @@ Create `package.json`:
 
 Create `README.md`:
 
-```markdown
+````markdown
 # pi-plugins
 
 pi package with skills and workflows for agent documentation.
@@ -61,6 +62,7 @@ pi package with skills and workflows for agent documentation.
 ```bash
 pi install ~/workspaces/sipgate/pi-plugins
 ```
+````
 
 ## Skills
 
@@ -73,7 +75,8 @@ pi install ~/workspaces/sipgate/pi-plugins
 /skill:migrate-to-agents-md
 /skill:audit-agents-md
 ```
-```
+
+````
 
 - [ ] **Step 3: Create `.gitignore`**
 
@@ -84,7 +87,7 @@ Create `.gitignore`:
 node_modules/
 .pi/
 .env
-```
+````
 
 - [ ] **Step 4: Initialize git**
 
@@ -99,6 +102,7 @@ Expected: repository initialized on default branch.
 ## Task 2: Add skill pressure scenarios
 
 **Files:**
+
 - Create: `tests/skill-pressure-scenarios.md`
 
 - [ ] **Step 1: Write pressure scenarios**
@@ -115,6 +119,7 @@ Use these scenarios to validate the skills before release.
 A project has a root `CLAUDE.md` containing architecture notes, commit conventions, and agent-specific instructions. The agent must produce a migration plan before writing and must separate agent instructions into `AGENTS.md`.
 
 Expected behavior:
+
 - reads `CLAUDE.md`
 - identifies migrated and retained sections
 - asks before writing
@@ -126,6 +131,7 @@ Expected behavior:
 A project has both `CLAUDE.md` and `AGENTS.md`. Some instructions overlap.
 
 Expected behavior:
+
 - detects existing `AGENTS.md`
 - asks whether to merge, overwrite, preview, or cancel
 - preserves unique existing content in merge mode
@@ -136,6 +142,7 @@ Expected behavior:
 A project has `AGENTS.md` with `AskUserQuestion`, `WebFetch`, `$ARGUMENTS`, and conflicting tool instructions.
 
 Expected behavior:
+
 - reports stale Claude Code-specific leftovers
 - reports contradictions
 - provides actionable fixes
@@ -146,6 +153,7 @@ Expected behavior:
 The user asks: "audit AGENTS.md" in a project that also has a large `CLAUDE.md`.
 
 Expected behavior:
+
 - reads only `AGENTS.md`
 - does not summarize or validate `CLAUDE.md`
 - refuses scope drift unless the user explicitly changes the task
@@ -154,6 +162,7 @@ Expected behavior:
 ## Task 3: Add `audit-agents-md` skill
 
 **Files:**
+
 - Create: `skills/audit-agents-md/SKILL.md`
 
 - [ ] **Step 1: Write skill**
@@ -175,6 +184,7 @@ head -20 skills/audit-agents-md/SKILL.md
 ```
 
 Expected:
+
 - `name: audit-agents-md`
 - description starts with `Use when`
 - parent directory matches skill name
@@ -182,6 +192,7 @@ Expected:
 ## Task 4: Add `migrate-to-agents-md` skill
 
 **Files:**
+
 - Create: `skills/migrate-to-agents-md/SKILL.md`
 
 - [ ] **Step 1: Write skill**
@@ -204,6 +215,7 @@ head -20 skills/migrate-to-agents-md/SKILL.md
 ```
 
 Expected:
+
 - `name: migrate-to-agents-md`
 - description starts with `Use when`
 - parent directory matches skill name
@@ -211,6 +223,7 @@ Expected:
 ## Task 5: Add lightweight validation script
 
 **Files:**
+
 - Create: `scripts/validate-skills.mjs`
 - Modify: `package.json`
 
@@ -231,6 +244,7 @@ Expected: exits 0 and prints both skill names.
 ## Task 6: Final verification and commit
 
 **Files:**
+
 - All created files
 
 - [ ] **Step 1: Check git status**

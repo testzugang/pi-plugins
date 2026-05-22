@@ -12,8 +12,8 @@ Specialized grilling session that challenges your plan against the existing doma
 ## Process
 
 1.  **Domain Awareness**: Before grilling, use `scout` or `read` to find existing documentation.
-    *   Look for `CONTEXT.md` (glossary) and `docs/adr/` (Architectural Decision Records).
-    *   If `CONTEXT-MAP.md` exists, the repo has multiple contexts; locate the relevant one.
+    - Look for `CONTEXT.md` (glossary) and `docs/adr/` (Architectural Decision Records).
+    - If `CONTEXT-MAP.md` exists, the repo has multiple contexts; locate the relevant one.
 2.  **Interview Relentlessly**: Walk down each branch of the design tree, resolving dependencies between decisions one-by-one.
 3.  **Challenge against the Glossary**: If a term conflicts with `CONTEXT.md`, call it out immediately.
 4.  **Sharpen Fuzzy Language**: Propose precise canonical terms (e.g., "Customer" vs "User").
@@ -28,6 +28,7 @@ Specialized grilling session that challenges your plan against the existing doma
 ## ADR Criteria
 
 Only offer to create an ADR when all three are true:
+
 1.  **Hard to reverse** — high cost of changing later.
 2.  **Surprising without context** — future readers will wonder "why?".
 3.  **Real trade-off** — there were genuine alternatives.

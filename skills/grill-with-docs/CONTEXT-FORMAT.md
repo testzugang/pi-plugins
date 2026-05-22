@@ -10,8 +10,10 @@
 ## Glossary
 
 ### [Term]
+
 [Definition of the term in the context of the domain]
 
 ### [Another Term]
+
 [Definition...]
 ```

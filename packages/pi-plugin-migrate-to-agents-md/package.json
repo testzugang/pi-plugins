@@ -2,7 +2,9 @@
   "name": "@sipgate/pi-plugin-migrate-to-agents-md",
   "version": "0.1.0",
   "description": "Pi skill to migrate agent instructions from CLAUDE.md to AGENTS.md",
-  "keywords": ["pi-package"],
+  "keywords": [
+    "pi-package"
+  ],
   "license": "MIT",
   "files": [
     "skills",
