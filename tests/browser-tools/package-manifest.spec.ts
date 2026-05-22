@@ -22,10 +22,7 @@ describe("pi-plugins package manifest", () => {
         "./packages/pi-pr-findings/skills",
         "./packages/pi-dependency-audit/skills",
       ],
-      extensions: [
-        "./extensions",
-        "./packages/pi-pr-findings/extensions",
-      ],
+      extensions: ["./extensions", "./packages/pi-pr-findings/extensions"],
       prompts: ["./prompts"],
       themes: ["./themes"],
     });

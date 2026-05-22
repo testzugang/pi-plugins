@@ -42,10 +42,7 @@ Modify `package.json` to configure npm workspaces, add changesets CLI, explicitl
       "./packages/pi-pr-findings/skills",
       "./packages/pi-dependency-audit/skills"
     ],
-    "extensions": [
-      "./extensions",
-      "./packages/pi-pr-findings/extensions"
-    ],
+    "extensions": ["./extensions", "./packages/pi-pr-findings/extensions"],
     "prompts": ["./prompts"],
     "themes": ["./themes"]
   },
@@ -120,10 +117,7 @@ describe("pi-plugins package manifest", () => {
         "./packages/pi-pr-findings/skills",
         "./packages/pi-dependency-audit/skills",
       ],
-      extensions: [
-        "./extensions",
-        "./packages/pi-pr-findings/extensions",
-      ],
+      extensions: ["./extensions", "./packages/pi-pr-findings/extensions"],
       prompts: ["./prompts"],
       themes: ["./themes"],
     });

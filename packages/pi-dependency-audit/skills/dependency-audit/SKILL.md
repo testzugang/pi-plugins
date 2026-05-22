@@ -291,6 +291,7 @@ Der Auditor muss am Ende des Berichts **immer** den passenden, maßgeschneiderte
 Um den standardmäßigen `pi update` Befehl im Terminal abzufangen, sodass er automatisch diesen interaktiven Sicherheits-Audit triggert und eine interaktive Auswahl anbietet, kann folgende Shell-Funktion in die Shell-Konfiguration (z. B. `~/.zshrc` oder `~/.bashrc`) eingetragen werden:
 
 **If installed via GitHub/Git (legacy):**
+
 ```bash
 pi() {
     if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
@@ -302,6 +303,7 @@ pi() {
 ```
 
 **If installed via npm:**
+
 ```bash
 pi() {
     if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then

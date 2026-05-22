@@ -6,6 +6,15 @@
     "pi-package"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/testzugang/pi-plugins.git",
+    "directory": "packages/pi-pr-findings"
+  },
+  "bugs": {
+    "url": "https://github.com/testzugang/pi-plugins/issues"
+  },
+  "homepage": "https://github.com/testzugang/pi-plugins/tree/main/packages/pi-pr-findings#readme",
   "files": [
     "extensions",
     "skills",
