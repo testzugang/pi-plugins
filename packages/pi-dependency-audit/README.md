@@ -1,11 +1,11 @@
-# @testzugang/pi-plugin-dependency-audit
+# @testzugang/pi-dependency-audit
 
 Static dependency and supply-chain malware auditing skill for Pi.
 
 ## Install
 
 ```bash
-pi install npm:@testzugang/pi-plugin-dependency-audit
+pi install npm:@testzugang/pi-dependency-audit
 ```
 
 ## Usage

@@ -1,11 +1,11 @@
-# @testzugang/pi-plugin-pr-findings
+# @testzugang/pi-pr-findings
 
 Fetch and group GitHub PR review findings by severity in Pi.
 
 ## Install
 
 ```bash
-pi install npm:@testzugang/pi-plugin-pr-findings
+pi install npm:@testzugang/pi-pr-findings
 ```
 
 ## Usage

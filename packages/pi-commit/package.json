@@ -1,8 +1,10 @@
 {
-  "name": "@testzugang/pi-plugin-dependency-audit",
+  "name": "@testzugang/pi-commit",
   "version": "0.1.0",
-  "description": "Static dependency and supply-chain malware auditing skill for Pi",
-  "keywords": ["pi-package"],
+  "description": "Interactive gitmoji-based commit skill with staged review for Pi",
+  "keywords": [
+    "pi-package"
+  ],
   "license": "MIT",
   "files": [
     "skills",

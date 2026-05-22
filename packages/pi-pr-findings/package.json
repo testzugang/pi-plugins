@@ -1,5 +1,5 @@
 {
-  "name": "@testzugang/pi-plugin-pr-findings",
+  "name": "@testzugang/pi-pr-findings",
   "version": "0.1.0",
   "description": "Fetch and group GitHub PR review findings by severity in Pi",
   "keywords": [

@@ -30,11 +30,11 @@ pi install /path/to/pi-plugins
 
 The following selected plugins are published to npm and can be installed individually:
 
-- **[`migrate-to-agents-md`](packages/pi-plugin-migrate-to-agents-md)**: `pi install npm:@testzugang/pi-plugin-migrate-to-agents-md`
-- **[`audit-agents-md`](packages/pi-plugin-audit-agents-md)**: `pi install npm:@testzugang/pi-plugin-audit-agents-md`
-- **[`commit`](packages/pi-plugin-commit)**: `pi install npm:@testzugang/pi-plugin-commit`
-- **[`pr-findings`](packages/pi-plugin-pr-findings)**: `pi install npm:@testzugang/pi-plugin-pr-findings`
-- **[`dependency-audit`](packages/pi-plugin-dependency-audit)**: `pi install npm:@testzugang/pi-plugin-dependency-audit`
+- **[`migrate-to-agents-md`](packages/pi-migrate-to-agents-md)**: `pi install npm:@testzugang/pi-migrate-to-agents-md`
+- **[`audit-agents-md`](packages/pi-audit-agents-md)**: `pi install npm:@testzugang/pi-audit-agents-md`
+- **[`commit`](packages/pi-commit)**: `pi install npm:@testzugang/pi-commit`
+- **[`pr-findings`](packages/pi-pr-findings)**: `pi install npm:@testzugang/pi-pr-findings`
+- **[`dependency-audit`](packages/pi-dependency-audit)**: `pi install npm:@testzugang/pi-dependency-audit`
 
 After installation, restart pi or run:
 
@@ -44,7 +44,7 @@ After installation, restart pi or run:
 
 ## Feature quick start
 
-### [`migrate-to-agents-md`](packages/pi-plugin-migrate-to-agents-md)
+### [`migrate-to-agents-md`](packages/pi-migrate-to-agents-md)
 
 Migrates agent-specific instructions from `CLAUDE.md` to `AGENTS.md`.
 
@@ -56,7 +56,7 @@ Install the package, then run:
 
 Use when you want to split existing Claude/project instructions into a dedicated `AGENTS.md` file.
 
-### [`audit-agents-md`](packages/pi-plugin-audit-agents-md)
+### [`audit-agents-md`](packages/pi-audit-agents-md)
 
 Audits only `AGENTS.md` for clarity, contradictions, stale harness-specific instructions, and unsafe automation guidance.
 
@@ -68,7 +68,7 @@ Install the package, then run:
 
 Use after creating or editing `AGENTS.md`.
 
-### [`commit`](packages/pi-plugin-commit)
+### [`commit`](packages/pi-commit)
 
 Creates gitmoji commits with staged-diff review, motivation, message proposal, and confirmation.
 
@@ -80,7 +80,7 @@ Install the package, stage your changes, then run:
 
 The skill asks for motivation, proposes a commit message, and confirms before running `git commit`.
 
-### [`pr-findings`](packages/pi-plugin-pr-findings)
+### [`pr-findings`](packages/pi-pr-findings)
 
 Fetches GitHub PR review findings via `gh` and groups them by severity.
 
@@ -148,7 +148,7 @@ Install the package, then run:
 
 _Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpocock/skills)._
 
-### [`dependency-audit`](packages/pi-plugin-dependency-audit)
+### [`dependency-audit`](packages/pi-dependency-audit)
 
 Static-first review of TypeScript dependencies, npm packages, and GitHub repositories for supply-chain malware and risky scripts.
 
@@ -166,11 +166,11 @@ When run without parameters, the skill asks first whether to audit pi dependenci
 
 For reusable global-pi checks and interactive terminal updates, see:
 
-- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-check-*.sh`](packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts)
-- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py`](packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py)
-- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py`](packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py)
-- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py`](packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py) (interactive CLI selector)
-- [`packages/pi-plugin-dependency-audit/skills/dependency-audit/config.json`](packages/pi-plugin-dependency-audit/skills/dependency-audit/config.json) (default age-gate: 24h)
+- [`packages/pi-dependency-audit/skills/dependency-audit/scripts/pi-check-*.sh`](packages/pi-dependency-audit/skills/dependency-audit/scripts)
+- [`packages/pi-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py`](packages/pi-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py)
+- [`packages/pi-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py`](packages/pi-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py)
+- [`packages/pi-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py`](packages/pi-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py) (interactive CLI selector)
+- [`packages/pi-dependency-audit/skills/dependency-audit/config.json`](packages/pi-dependency-audit/skills/dependency-audit/config.json) (default age-gate: 24h)
 
 #### Pimp `pi update` with security checks
 
@@ -179,7 +179,7 @@ To automatically run the security audit and launch the interactive selection men
 ```bash
 pi() {
     if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
-        python3 ~/.pi/agent/git/github.com/testzugang/pi-plugins/packages/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
+        python3 ~/.pi/agent/git/github.com/testzugang/pi-plugins/packages/pi-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
     else
         command pi "$@"
     fi
@@ -225,20 +225,20 @@ Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project 
 
 ### Skills
 
-- [`migrate-to-agents-md`](packages/pi-plugin-migrate-to-agents-md)
-- [`audit-agents-md`](packages/pi-plugin-audit-agents-md)
-- [`commit`](packages/pi-plugin-commit)
-- [`pr-findings`](packages/pi-plugin-pr-findings)
+- [`migrate-to-agents-md`](packages/pi-migrate-to-agents-md)
+- [`audit-agents-md`](packages/pi-audit-agents-md)
+- [`commit`](packages/pi-commit)
+- [`pr-findings`](packages/pi-pr-findings)
 - [`browser-tools`](skills/browser-tools)
 - [`grill-with-docs`](skills/grill-with-docs)
 - [`improve-codebase-architecture`](skills/improve-codebase-architecture)
 - [`handoff`](skills/handoff)
-- [`dependency-audit`](packages/pi-plugin-dependency-audit)
+- [`dependency-audit`](packages/pi-dependency-audit)
 
 ### Extensions
 
 - [`browser-tools`](extensions/browser-tools)
-- [`pr-findings`](packages/pi-plugin-pr-findings)
+- [`pr-findings`](packages/pi-pr-findings)
 
 ## Repository layout
 
@@ -247,7 +247,7 @@ The repository uses a monorepo structure where modular, high-maturity plugins ar
 ```text
 pi-plugins/
   packages/               # Published independent npm packages (Monorepo Workspaces)
-    pi-plugin-xxx/        # Package workspace containing its own package.json, SKILL.md and assets
+    pi-xxx/        # Package workspace containing its own package.json, SKILL.md and assets
   skills/                 # Remaining unmigrated shared Agent Skills (legacy root)
   extensions/             # Remaining unmigrated shared extensions (legacy root)
   prompts/                # Shared Prompt templates

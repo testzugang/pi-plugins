@@ -36,15 +36,15 @@ Modify `package.json` to configure npm workspaces, add changesets CLI, explicitl
   "pi": {
     "skills": [
       "./skills",
-      "./packages/pi-plugin-migrate-to-agents-md/skills",
-      "./packages/pi-plugin-audit-agents-md/skills",
-      "./packages/pi-plugin-commit/skills",
-      "./packages/pi-plugin-pr-findings/skills",
-      "./packages/pi-plugin-dependency-audit/skills"
+      "./packages/pi-migrate-to-agents-md/skills",
+      "./packages/pi-audit-agents-md/skills",
+      "./packages/pi-commit/skills",
+      "./packages/pi-pr-findings/skills",
+      "./packages/pi-dependency-audit/skills"
     ],
     "extensions": [
       "./extensions",
-      "./packages/pi-plugin-pr-findings/extensions"
+      "./packages/pi-pr-findings/extensions"
     ],
     "prompts": ["./prompts"],
     "themes": ["./themes"]
@@ -114,15 +114,15 @@ describe("pi-plugins package manifest", () => {
     expect(manifest.pi).toEqual({
       skills: [
         "./skills",
-        "./packages/pi-plugin-migrate-to-agents-md/skills",
-        "./packages/pi-plugin-audit-agents-md/skills",
-        "./packages/pi-plugin-commit/skills",
-        "./packages/pi-plugin-pr-findings/skills",
-        "./packages/pi-plugin-dependency-audit/skills",
+        "./packages/pi-migrate-to-agents-md/skills",
+        "./packages/pi-audit-agents-md/skills",
+        "./packages/pi-commit/skills",
+        "./packages/pi-pr-findings/skills",
+        "./packages/pi-dependency-audit/skills",
       ],
       extensions: [
         "./extensions",
-        "./packages/pi-plugin-pr-findings/extensions",
+        "./packages/pi-pr-findings/extensions",
       ],
       prompts: ["./prompts"],
       themes: ["./themes"],
@@ -186,26 +186,26 @@ git commit -m "chore: setup monorepo workspaces, changesets, and upgrade SDK nam
 
 **Files:**
 
-- Create: `packages/pi-plugin-migrate-to-agents-md/package.json`
-- Create: `packages/pi-plugin-migrate-to-agents-md/README.md`
-- Move: `skills/migrate-to-agents-md/` to `packages/pi-plugin-migrate-to-agents-md/skills/migrate-to-agents-md/`
+- Create: `packages/pi-migrate-to-agents-md/package.json`
+- Create: `packages/pi-migrate-to-agents-md/README.md`
+- Move: `skills/migrate-to-agents-md/` to `packages/pi-migrate-to-agents-md/skills/migrate-to-agents-md/`
 
 - [ ] **Step 1: Create package folder and move skill directory**
 
 Run commands:
 
 ```bash
-mkdir -p packages/pi-plugin-migrate-to-agents-md/skills
-git mv skills/migrate-to-agents-md packages/pi-plugin-migrate-to-agents-md/skills/migrate-to-agents-md
+mkdir -p packages/pi-migrate-to-agents-md/skills
+git mv skills/migrate-to-agents-md packages/pi-migrate-to-agents-md/skills/migrate-to-agents-md
 ```
 
 - [ ] **Step 2: Create sub-package package.json**
 
-Create `packages/pi-plugin-migrate-to-agents-md/package.json` enabling access public and cryptographically verifiable build provenance for security.
+Create `packages/pi-migrate-to-agents-md/package.json` enabling access public and cryptographically verifiable build provenance for security.
 
 ```json
 {
-  "name": "@testzugang/pi-plugin-migrate-to-agents-md",
+  "name": "@testzugang/pi-migrate-to-agents-md",
   "version": "0.1.0",
   "description": "Pi skill to migrate agent instructions from CLAUDE.md to AGENTS.md",
   "keywords": ["pi-package"],
@@ -226,17 +226,17 @@ Create `packages/pi-plugin-migrate-to-agents-md/package.json` enabling access pu
 
 - [ ] **Step 3: Create simple package README.md**
 
-Create `packages/pi-plugin-migrate-to-agents-md/README.md`:
+Create `packages/pi-migrate-to-agents-md/README.md`:
 
 ````markdown
-# @testzugang/pi-plugin-migrate-to-agents-md
+# @testzugang/pi-migrate-to-agents-md
 
 Pi skill to migrate agent instructions from CLAUDE.md to AGENTS.md.
 
 ## Install
 
 ```bash
-pi install npm:@testzugang/pi-plugin-migrate-to-agents-md
+pi install npm:@testzugang/pi-migrate-to-agents-md
 ```
 ````
 
@@ -252,7 +252,7 @@ pi install npm:@testzugang/pi-plugin-migrate-to-agents-md
 
 Run commands:
 ```bash
-git add packages/pi-plugin-migrate-to-agents-md
+git add packages/pi-migrate-to-agents-md
 git commit -m "feat: migrate migrate-to-agents-md to workspaces"
 ````
 
@@ -262,26 +262,26 @@ git commit -m "feat: migrate migrate-to-agents-md to workspaces"
 
 **Files:**
 
-- Create: `packages/pi-plugin-audit-agents-md/package.json`
-- Create: `packages/pi-plugin-audit-agents-md/README.md`
-- Move: `skills/audit-agents-md/` to `packages/pi-plugin-audit-agents-md/skills/audit-agents-md/`
+- Create: `packages/pi-audit-agents-md/package.json`
+- Create: `packages/pi-audit-agents-md/README.md`
+- Move: `skills/audit-agents-md/` to `packages/pi-audit-agents-md/skills/audit-agents-md/`
 
 - [ ] **Step 1: Create package folder and move skill directory**
 
 Run commands:
 
 ```bash
-mkdir -p packages/pi-plugin-audit-agents-md/skills
-git mv skills/audit-agents-md packages/pi-plugin-audit-agents-md/skills/audit-agents-md
+mkdir -p packages/pi-audit-agents-md/skills
+git mv skills/audit-agents-md packages/pi-audit-agents-md/skills/audit-agents-md
 ```
 
 - [ ] **Step 2: Create sub-package package.json**
 
-Create `packages/pi-plugin-audit-agents-md/package.json` enabling access public and cryptographically verifiable build provenance.
+Create `packages/pi-audit-agents-md/package.json` enabling access public and cryptographically verifiable build provenance.
 
 ```json
 {
-  "name": "@testzugang/pi-plugin-audit-agents-md",
+  "name": "@testzugang/pi-audit-agents-md",
   "version": "0.1.0",
   "description": "Pi skill to audit AGENTS.md for clarity and safety rule violations",
   "keywords": ["pi-package"],
@@ -302,17 +302,17 @@ Create `packages/pi-plugin-audit-agents-md/package.json` enabling access public 
 
 - [ ] **Step 3: Create simple package README.md**
 
-Create `packages/pi-plugin-audit-agents-md/README.md`:
+Create `packages/pi-audit-agents-md/README.md`:
 
 ````markdown
-# @testzugang/pi-plugin-audit-agents-md
+# @testzugang/pi-audit-agents-md
 
 Pi skill to audit AGENTS.md for clarity and safety rule violations.
 
 ## Install
 
 ```bash
-pi install npm:@testzugang/pi-plugin-audit-agents-md
+pi install npm:@testzugang/pi-audit-agents-md
 ```
 ````
 
@@ -328,7 +328,7 @@ pi install npm:@testzugang/pi-plugin-audit-agents-md
 
 Run commands:
 ```bash
-git add packages/pi-plugin-audit-agents-md
+git add packages/pi-audit-agents-md
 git commit -m "feat: migrate audit-agents-md to workspaces"
 ````
 
@@ -338,26 +338,26 @@ git commit -m "feat: migrate audit-agents-md to workspaces"
 
 **Files:**
 
-- Create: `packages/pi-plugin-commit/package.json`
-- Create: `packages/pi-plugin-commit/README.md`
-- Move: `skills/commit/` to `packages/pi-plugin-commit/skills/commit/`
+- Create: `packages/pi-commit/package.json`
+- Create: `packages/pi-commit/README.md`
+- Move: `skills/commit/` to `packages/pi-commit/skills/commit/`
 
 - [ ] **Step 1: Create package folder and move skill directory**
 
 Run commands:
 
 ```bash
-mkdir -p packages/pi-plugin-commit/skills
-git mv skills/commit packages/pi-plugin-commit/skills/commit
+mkdir -p packages/pi-commit/skills
+git mv skills/commit packages/pi-commit/skills/commit
 ```
 
 - [ ] **Step 2: Create sub-package package.json**
 
-Create `packages/pi-plugin-commit/package.json` enabling access public and cryptographically verifiable build provenance.
+Create `packages/pi-commit/package.json` enabling access public and cryptographically verifiable build provenance.
 
 ```json
 {
-  "name": "@testzugang/pi-plugin-commit",
+  "name": "@testzugang/pi-commit",
   "version": "0.1.0",
   "description": "Interactive gitmoji-based commit skill with staged review for Pi",
   "keywords": ["pi-package"],
@@ -378,17 +378,17 @@ Create `packages/pi-plugin-commit/package.json` enabling access public and crypt
 
 - [ ] **Step 3: Create simple package README.md**
 
-Create `packages/pi-plugin-commit/README.md`:
+Create `packages/pi-commit/README.md`:
 
 ````markdown
-# @testzugang/pi-plugin-commit
+# @testzugang/pi-commit
 
 Interactive gitmoji-based commit skill with staged review for Pi.
 
 ## Install
 
 ```bash
-pi install npm:@testzugang/pi-plugin-commit
+pi install npm:@testzugang/pi-commit
 ```
 ````
 
@@ -404,7 +404,7 @@ pi install npm:@testzugang/pi-plugin-commit
 
 Run commands:
 ```bash
-git add packages/pi-plugin-commit
+git add packages/pi-commit
 git commit -m "feat: migrate commit to workspaces"
 ````
 
@@ -414,25 +414,25 @@ git commit -m "feat: migrate commit to workspaces"
 
 **Files:**
 
-- Create: `packages/pi-plugin-pr-findings/package.json`
-- Create: `packages/pi-plugin-pr-findings/README.md`
-- Move: `skills/pr-findings/` to `packages/pi-plugin-pr-findings/skills/pr-findings/`
-- Move: `extensions/pr-findings/` to `packages/pi-plugin-pr-findings/extensions/pr-findings/`
-- Modify: `packages/pi-plugin-pr-findings/extensions/pr-findings/index.ts`
+- Create: `packages/pi-pr-findings/package.json`
+- Create: `packages/pi-pr-findings/README.md`
+- Move: `skills/pr-findings/` to `packages/pi-pr-findings/skills/pr-findings/`
+- Move: `extensions/pr-findings/` to `packages/pi-pr-findings/extensions/pr-findings/`
+- Modify: `packages/pi-pr-findings/extensions/pr-findings/index.ts`
 
 - [ ] **Step 1: Create package directories and move folders**
 
 Run commands:
 
 ```bash
-mkdir -p packages/pi-plugin-pr-findings/skills packages/pi-plugin-pr-findings/extensions
-git mv skills/pr-findings packages/pi-plugin-pr-findings/skills/pr-findings
-git mv extensions/pr-findings packages/pi-plugin-pr-findings/extensions/pr-findings
+mkdir -p packages/pi-pr-findings/skills packages/pi-pr-findings/extensions
+git mv skills/pr-findings packages/pi-pr-findings/skills/pr-findings
+git mv extensions/pr-findings packages/pi-pr-findings/extensions/pr-findings
 ```
 
 - [ ] **Step 2: Update SDK import in index.ts to use modern @earendil-works namespace**
 
-Modify `packages/pi-plugin-pr-findings/extensions/pr-findings/index.ts` line 1:
+Modify `packages/pi-pr-findings/extensions/pr-findings/index.ts` line 1:
 
 ```typescript
 // Replace this:
@@ -444,11 +444,11 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 - [ ] **Step 3: Create sub-package package.json**
 
-Create `packages/pi-plugin-pr-findings/package.json` enabling access public and cryptographically verifiable build provenance.
+Create `packages/pi-pr-findings/package.json` enabling access public and cryptographically verifiable build provenance.
 
 ```json
 {
-  "name": "@testzugang/pi-plugin-pr-findings",
+  "name": "@testzugang/pi-pr-findings",
   "version": "0.1.0",
   "description": "Fetch and group GitHub PR review findings by severity in Pi",
   "keywords": ["pi-package"],
@@ -471,17 +471,17 @@ Create `packages/pi-plugin-pr-findings/package.json` enabling access public and 
 
 - [ ] **Step 4: Create simple package README.md**
 
-Create `packages/pi-plugin-pr-findings/README.md`:
+Create `packages/pi-pr-findings/README.md`:
 
 ````markdown
-# @testzugang/pi-plugin-pr-findings
+# @testzugang/pi-pr-findings
 
 Fetch and group GitHub PR review findings by severity in Pi.
 
 ## Install
 
 ```bash
-pi install npm:@testzugang/pi-plugin-pr-findings
+pi install npm:@testzugang/pi-pr-findings
 ```
 ````
 
@@ -497,7 +497,7 @@ pi install npm:@testzugang/pi-plugin-pr-findings
 
 Run commands:
 ```bash
-git add packages/pi-plugin-pr-findings
+git add packages/pi-pr-findings
 git commit -m "feat: migrate pr-findings to workspaces and update SDK import"
 ````
 
@@ -507,23 +507,23 @@ git commit -m "feat: migrate pr-findings to workspaces and update SDK import"
 
 **Files:**
 
-- Create: `packages/pi-plugin-dependency-audit/package.json`
-- Create: `packages/pi-plugin-dependency-audit/README.md`
-- Move: `skills/dependency-audit/` to `packages/pi-plugin-dependency-audit/skills/dependency-audit/`
-- Modify: `packages/pi-plugin-dependency-audit/skills/dependency-audit/SKILL.md`
+- Create: `packages/pi-dependency-audit/package.json`
+- Create: `packages/pi-dependency-audit/README.md`
+- Move: `skills/dependency-audit/` to `packages/pi-dependency-audit/skills/dependency-audit/`
+- Modify: `packages/pi-dependency-audit/skills/dependency-audit/SKILL.md`
 
 - [ ] **Step 1: Create package folder and move skill files**
 
 Run commands:
 
 ```bash
-mkdir -p packages/pi-plugin-dependency-audit/skills
-git mv skills/dependency-audit packages/pi-plugin-dependency-audit/skills/dependency-audit
+mkdir -p packages/pi-dependency-audit/skills
+git mv skills/dependency-audit packages/pi-dependency-audit/skills/dependency-audit
 ```
 
 - [ ] **Step 2: Update interactive shell wrapper documentation inside SKILL.md**
 
-Modify `packages/pi-plugin-dependency-audit/skills/dependency-audit/SKILL.md` to note alternative installation paths when the plugin is installed via npm.
+Modify `packages/pi-dependency-audit/skills/dependency-audit/SKILL.md` to note alternative installation paths when the plugin is installed via npm.
 
 ````markdown
 // Update the wrapper documentation section to include:
@@ -547,7 +547,7 @@ pi() {
 ```bash
 pi() {
     if [[ "$1" == "update" && ( -z "$2" || "$2" == "--extensions" ) ]]; then
-        python3 ~/.pi/packages/node_modules/@testzugang/pi-plugin-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
+        python3 ~/.pi/packages/node_modules/@testzugang/pi-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py
     else
         command pi "$@"
     fi
@@ -558,11 +558,11 @@ pi() {
 
 - [ ] **Step 3: Create sub-package package.json**
 
-Create `packages/pi-plugin-dependency-audit/package.json` enabling access public and cryptographically verifiable build provenance.
+Create `packages/pi-dependency-audit/package.json` enabling access public and cryptographically verifiable build provenance.
 
 ```json
 {
-  "name": "@testzugang/pi-plugin-dependency-audit",
+  "name": "@testzugang/pi-dependency-audit",
   "version": "0.1.0",
   "description": "Static dependency and supply-chain malware auditing skill for Pi",
   "keywords": ["pi-package"],
@@ -588,17 +588,17 @@ Create `packages/pi-plugin-dependency-audit/package.json` enabling access public
 
 - [ ] **Step 4: Create package README.md**
 
-Create `packages/pi-plugin-dependency-audit/README.md`:
+Create `packages/pi-dependency-audit/README.md`:
 
 ````markdown
-# @testzugang/pi-plugin-dependency-audit
+# @testzugang/pi-dependency-audit
 
 Static dependency and supply-chain malware auditing skill for Pi.
 
 ## Install
 
 ```bash
-pi install npm:@testzugang/pi-plugin-dependency-audit
+pi install npm:@testzugang/pi-dependency-audit
 ```
 ````
 
@@ -618,7 +618,7 @@ See [SKILL.md](skills/dependency-audit/SKILL.md) for full instructions on settin
 
 Run commands:
 ```bash
-git add packages/pi-plugin-dependency-audit
+git add packages/pi-dependency-audit
 git commit -m "feat: migrate dependency-audit to workspaces and update doc paths"
 ````
 
@@ -915,11 +915,11 @@ Modify the "Install" section to include npm installations:
 
 The following selected plugins are published to npm and can be installed individually:
 
-- **`migrate-to-agents-md`**: `pi install npm:@testzugang/pi-plugin-migrate-to-agents-md`
-- **`audit-agents-md`**: `pi install npm:@testzugang/pi-plugin-audit-agents-md`
-- **`commit`**: `pi install npm:@testzugang/pi-plugin-commit`
-- **`pr-findings`**: `pi install npm:@testzugang/pi-plugin-pr-findings`
-- **`dependency-audit`**: `pi install npm:@testzugang/pi-plugin-dependency-audit`
+- **`migrate-to-agents-md`**: `pi install npm:@testzugang/pi-migrate-to-agents-md`
+- **`audit-agents-md`**: `pi install npm:@testzugang/pi-audit-agents-md`
+- **`commit`**: `pi install npm:@testzugang/pi-commit`
+- **`pr-findings`**: `pi install npm:@testzugang/pi-pr-findings`
+- **`dependency-audit`**: `pi install npm:@testzugang/pi-dependency-audit`
 ```
 
 Update the "Repository layout" section to include `packages/`:
@@ -930,7 +930,7 @@ Update the "Repository layout" section to include `packages/`:
 ```text
 pi-plugins/
   packages/               # Published independent npm packages (Monorepo Workspaces)
-    pi-plugin-xxx/        # Package workspace containing its own package.json, SKILL.md and assets
+    pi-xxx/        # Package workspace containing its own package.json, SKILL.md and assets
   skills/                 # Remaining unmigrated shared Agent Skills (legacy root)
   extensions/             # Remaining unmigrated shared extensions (legacy root)
   prompts/                # Shared Prompt templates
@@ -944,7 +944,7 @@ pi-plugins/
 
 - [ ] **Step 2: Verify all markdown links inside the root README.md**
 
-Check that links to skills like `[skills/dependency-audit/README.md](packages/pi-plugin-dependency-audit/README.md)` are updated to their correct new workspace locations, so that there are no broken links.
+Check that links to skills like `[skills/dependency-audit/README.md](packages/pi-dependency-audit/README.md)` are updated to their correct new workspace locations, so that there are no broken links.
 
 - [ ] **Step 3: Commit README.md updates**
 
