@@ -1,6 +1,6 @@
 {
   "name": "@testzugang/pi-migrate-to-agents-md",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pi skill to migrate agent instructions from CLAUDE.md to AGENTS.md",
   "keywords": [
     "pi-package"

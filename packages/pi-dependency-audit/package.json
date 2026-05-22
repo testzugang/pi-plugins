@@ -1,6 +1,6 @@
 {
   "name": "@testzugang/pi-dependency-audit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Static dependency and supply-chain malware auditing skill for Pi",
   "keywords": [
     "pi-package"
