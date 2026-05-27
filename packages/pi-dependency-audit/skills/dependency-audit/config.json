@@ -1,3 +1,5 @@
 {
-  "min_update_age_hours": 24
+  "min_update_age_hours": 24,
+  "trusted_peer_dependency_scopes": ["@earendil-works"],
+  "trusted_peer_dependency_packages": []
 }

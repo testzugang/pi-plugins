@@ -181,6 +181,11 @@ GITHUB_API_PATTERNS = [
 FULL_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 SEMVER_EXACT_RE = re.compile(r"^(?:v)?\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
 
+DEFAULT_CONFIG = {
+    "trusted_peer_dependency_scopes": [],
+    "trusted_peer_dependency_packages": [],
+}
+
 
 @dataclass
 class Finding:
@@ -221,6 +226,44 @@ def load_ioc_files(paths: Iterable[Path]):
             continue
 
 
+def read_json_config(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Invalid JSON config at {path}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise RuntimeError(f"Config at {path} must be a JSON object")
+    return data
+
+
+def string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip().rstrip("/") for item in value if str(item).strip()]
+
+
+def normalize_config(raw: dict[str, Any]) -> dict[str, Any]:
+    config = dict(DEFAULT_CONFIG)
+    config.update(raw)
+    config["trusted_peer_dependency_scopes"] = string_list(config.get("trusted_peer_dependency_scopes"))
+    config["trusted_peer_dependency_packages"] = string_list(config.get("trusted_peer_dependency_packages"))
+    return config
+
+
+def load_config(config_override: str | None = None) -> dict[str, Any]:
+    skill_dir = Path(__file__).resolve().parents[1]
+    home_config = Path.home() / ".pi" / "dependency-audit.json"
+    merged: dict[str, Any] = {}
+    for path in [skill_dir / "config.json", home_config]:
+        if path.exists():
+            merged.update(read_json_config(path))
+    if config_override:
+        merged.update(read_json_config(Path(config_override)))
+    return normalize_config(merged)
+
+
 @dataclass
 class TargetSummary:
     target: str
@@ -249,7 +292,7 @@ class ScanReport:
 
 
 class ScanContext:
-    def __init__(self, root: Path, target_label: str, mode: str, is_tarball: bool, include_node_modules: bool, max_file_bytes: int, max_findings: int):
+    def __init__(self, root: Path, target_label: str, mode: str, is_tarball: bool, include_node_modules: bool, max_file_bytes: int, max_findings: int, config: dict[str, Any]):
         self.root = root.resolve()
         self.target_label = target_label
         self.mode = mode
@@ -257,6 +300,7 @@ class ScanContext:
         self.include_node_modules = include_node_modules
         self.max_file_bytes = max_file_bytes
         self.max_findings = max_findings
+        self.config = config
         self.findings: list[Finding] = []
         self._dedupe: set[tuple[str, str, str, int | None, str]] = set()
         self.lifecycle_entrypoints: set[str] = set()
@@ -461,6 +505,16 @@ def classify_dep_spec(spec: str) -> tuple[str, str, str]:
     return "other", "LOW", "non-standard dependency spec; review manually"
 
 
+def is_trusted_peer_dependency(ctx: ScanContext, dep_name: str) -> bool:
+    trusted_packages = set(ctx.config.get("trusted_peer_dependency_packages", []))
+    if dep_name in trusted_packages:
+        return True
+    for scope in ctx.config.get("trusted_peer_dependency_scopes", []):
+        if scope.startswith("@") and dep_name.startswith(f"{scope}/"):
+            return True
+    return False
+
+
 def flatten_dep_like(obj: Any, prefix: str = "") -> list[tuple[str, str]]:
     found: list[tuple[str, str]] = []
     if isinstance(obj, dict):
@@ -595,6 +649,8 @@ def analyze_package_json(ctx: ScanContext, path: Path):
                 continue
             kind, sev, reason = classify_dep_spec(spec)
             tags = ["npm", "dependency", field_name, kind]
+            trusted_peer = field_name == "peerDependencies" and is_trusted_peer_dependency(ctx, dep_name)
+            trusted_peer_range = trusted_peer and kind in {"floating", "range"}
             if field_name == "optionalDependencies" and kind in {"git", "git-unpinned", "git-not-full-sha", "url", "local-file", "alias"}:
                 sev = max_severity(sev, "HIGH")
                 reason += "; optionalDependencies are easy to overlook and install failures may be ignored"
@@ -605,9 +661,16 @@ def analyze_package_json(ctx: ScanContext, path: Path):
                 sev = max_severity(sev, "MEDIUM")
             if kind in {"exact", "workspace"}:
                 continue
-            if kind == "range" and ctx.mode == "library":
+            if trusted_peer_range:
+                sev = "INFO"
+                reason += "; trusted peer dependency range is allowed by dependency-audit config"
+                tags.append("trusted-peer")
+            elif kind == "range" and ctx.mode == "library":
                 sev = "INFO"
             dep_line = key_line(text, dep_name.split(".")[-1]) or line
+            recommendation = "Prefer registry packages pinned by lockfile and integrity. Avoid git/URL/file specs unless explicitly allowlisted and pinned to immutable commits/artifacts."
+            if trusted_peer_range:
+                recommendation = "Document why this peer range is intentionally broad and keep the trusted peer allowlist narrow."
             ctx.add(
                 sev,
                 "dependency-spec",
@@ -615,7 +678,7 @@ def analyze_package_json(ctx: ScanContext, path: Path):
                 dep_line,
                 f"Dependency spec review needed: {field_name}.{dep_name}",
                 f"{dep_name}: {spec}; {reason}",
-                "Prefer registry packages pinned by lockfile and integrity. Avoid git/URL/file specs unless explicitly allowlisted and pinned to immutable commits/artifacts.",
+                recommendation,
                 "medium",
                 tags,
             )
@@ -1142,7 +1205,7 @@ def scan_target(path: Path, args: argparse.Namespace) -> ScanContext:
     label = str(path)
     if path.is_file() and path.suffix.lower() in {".tgz", ".gz", ".tar"}:
         tmp = Path(tempfile.mkdtemp(prefix="npm-ts-audit-"))
-        ctx = ScanContext(tmp, label, args.mode, True, args.include_node_modules, args.max_file_bytes, args.max_findings)
+        ctx = ScanContext(tmp, label, args.mode, True, args.include_node_modules, args.max_file_bytes, args.max_findings, args.config_data)
         ctx.summary.sha256 = sha256_file(path)
         extraction_findings = safe_extract_tgz(path, tmp)
         for f in extraction_findings:
@@ -1156,7 +1219,7 @@ def scan_target(path: Path, args: argparse.Namespace) -> ScanContext:
         root = path.parent
     else:
         root = path
-    ctx = ScanContext(root, label, args.mode, False, args.include_node_modules, args.max_file_bytes, args.max_findings)
+    ctx = ScanContext(root, label, args.mode, False, args.include_node_modules, args.max_file_bytes, args.max_findings, args.config_data)
     if path.is_file():
         ctx.summary.sha256 = sha256_file(path)
     scan_root(ctx)
@@ -1312,6 +1375,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--max-file-bytes", type=int, default=5_000_000, help="Max bytes to read per text file")
     p.add_argument("--max-findings", type=int, default=1000, help="Maximum findings to record")
     p.add_argument("--ioc-file", action="append", default=[], help="Additional IOC text file; one indicator per line. hxxp and [.] are normalized.")
+    p.add_argument("--config", default="", help="Optional dependency-audit config JSON path. Overrides skill default and ~/.pi/dependency-audit.json")
     p.add_argument("--keep-extracted", action="store_true", help="Keep extracted tarball temp directories for manual review")
     return p.parse_args(argv)
 
@@ -1320,6 +1384,11 @@ def main(argv: list[str]) -> int:
     args = parse_args(argv)
     default_ioc = Path(__file__).resolve().parents[1] / "rules" / "iocs.txt"
     load_ioc_files([default_ioc] + [Path(x) for x in args.ioc_file])
+    try:
+        args.config_data = load_config(args.config)
+    except RuntimeError as exc:
+        sys.stderr.write(f"{exc}\n")
+        return 2
     contexts: list[ScanContext] = []
     for target in args.targets:
         path = Path(target)

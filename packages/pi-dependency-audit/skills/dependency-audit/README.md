@@ -9,6 +9,8 @@ Static-first Skill for reviewing TypeScript dependencies, npm packages and npm-b
 - Scans npm `.tgz` tarballs without executing package code.
 - Flags malware patterns such as download+execute, credential access+network, obfuscation, cloud metadata probes, GitHub API write behavior and IDE/AI-agent persistence.
 - Produces Markdown, JSON and SARIF output.
+- Allows narrow trusted peer dependency rules. Default config treats `@earendil-works/*` peer dependency ranges as INFO-only, while normal dependencies and optional dependencies remain strict.
+- Global Pi audits automatically write a Markdown report with held-back/rejected update details.
 
 ## Quick start
 
@@ -30,11 +32,10 @@ bash scripts/pi-check-git-source-updates.sh
 # or everything in one run
 bash scripts/pi-check-all-updates.sh
 
-# full static update audit + markdown summary
-python3 scripts/run_pi_dependency_audit.py --output /tmp/pi_audit_aggregated.json
-python3 scripts/summarize_pi_dependency_audit.py \
-  --input /tmp/pi_audit_aggregated.json \
-  --output /tmp/pi_audit_report.md
+# full static update audit; writes JSON and Markdown summary
+python3 scripts/run_pi_dependency_audit.py \
+  --output /tmp/pi_audit_aggregated.json \
+  --markdown-output /tmp/pi_audit_report.md
 ```
 
 Age-gate configuration (default: 24h):
@@ -47,9 +48,13 @@ Example config:
 
 ```json
 {
-  "min_update_age_hours": 24
+  "min_update_age_hours": 24,
+  "trusted_peer_dependency_scopes": ["@earendil-works"],
+  "trusted_peer_dependency_packages": []
 }
 ```
+
+Trusted peer dependency rules apply only to `peerDependencies`; `dependencies`, `devDependencies`, `optionalDependencies`, `overrides` and `resolutions` stay strict.
 
 `--strict-exit` exits with code `2` for HIGH/CRITICAL findings and `1` for MEDIUM-only findings.
 
@@ -74,10 +79,10 @@ Do not run `npm install`, `npm ci`, `npm pack`, `npm test`, `npm run build`, `np
 - `scripts/pi-check-all-updates.sh`: runs all three checks in sequence.
 - `scripts/pi-default-packages.txt`: default package target list for the helper scripts.
 - `scripts/pi-default-git-repos.txt`: default git repo target list for update checks.
-- `scripts/run_pi_dependency_audit.py`: end-to-end static audit workflow for global pi dependency updates.
-- `scripts/summarize_pi_dependency_audit.py`: creates a markdown summary from aggregated JSON results.
+- `scripts/run_pi_dependency_audit.py`: end-to-end static audit workflow for global pi dependency updates; writes JSON and Markdown reports.
+- `scripts/summarize_pi_dependency_audit.py`: creates a markdown summary from aggregated JSON results, including held-back/rejected update details.
 - `scripts/pi-interactive-update.py`: interactive CLI wrapper and menu selector for native `pi update` integration.
-- `config.json`: default config (currently `min_update_age_hours`).
+- `config.json`: default config (`min_update_age_hours`, trusted peer dependency scopes/packages).
 - `rules/iocs.txt`: editable IOC seed list.
 - `templates/report.md`: manual review template.
 - `examples/sample-commands.md`: safe commands and review playbooks.

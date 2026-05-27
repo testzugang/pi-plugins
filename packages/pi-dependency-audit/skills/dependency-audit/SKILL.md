@@ -32,7 +32,7 @@ Führe dann je nach Auswahl die entsprechenden Szenarien aus:
 1. Führe `npm outdated --json` (oder ein äquivalentes Tool) aus, um die Liste verfügbarer Updates zu ermitteln.
 2. Iteriere durch die ermittelten Pakete.
 3. Führe für jedes Paket die in diesem Skill beschriebenen statischen Prüfungen durch.
-4. Generiere einen aggregierten Report.
+4. Generiere einen aggregierten JSON-Report und einen Markdown-Report mit Detailabschnitten für abgelehnte/blockierte Updates.
 
 **Szenario B: Globale Pi-Erweiterungen**
 
@@ -47,11 +47,13 @@ Führe dann je nach Auswahl die entsprechenden Szenarien aus:
    - `skills/dependency-audit/config.json`
    - Fallback auf Defaults
 3. `min_update_age_hours` steuert die Mindest-Altersschwelle für Updates. Default ist `24`.
-4. Ermittle für jedes Paket, ob auf der Remote-Quelle (z. B. auf GitHub) neue Commits oder Versionen verfügbar sind.
-5. Wenn ein Update jünger als `min_update_age_hours` ist, markiere es als `too_fresh` mit `SKIP_TOO_FRESH`.
-6. Klone/lade die übrigen Updates temporär herunter, **ohne sie zu installieren oder Scripte auszuführen**.
-7. Führe die in diesem Skill beschriebenen statischen Prüfungen auf dem neuen Code durch.
-8. Generiere einen Report, der angibt, welche Pi-Erweiterungen sicher aktualisiert werden können. **Präsentiere am Ende des Berichts immer einen maßgeschneiderten nativen `pi update`-Vorschlag (siehe Abschnitt "Natives Pi-Paketmanagement (`pi update`)"), der blockierte/quarantänisierte oder zu frische Pakete explizit auslässt.**
+4. `trusted_peer_dependency_scopes` und `trusted_peer_dependency_packages` steuern enge Allowlists für Peer-Dependency-Versionranges. Default: `@earendil-works/*` ist als Peer-Dependency-Scope vertrauenswürdig; diese Regel gilt **nur** für `peerDependencies`, nicht für `dependencies`, `devDependencies`, `optionalDependencies`, `overrides` oder `resolutions`.
+5. Ermittle für jedes Paket, ob auf der Remote-Quelle (z. B. auf GitHub) neue Commits oder Versionen verfügbar sind.
+6. Wenn ein Update jünger als `min_update_age_hours` ist, markiere es als `too_fresh` mit `SKIP_TOO_FRESH`.
+7. Klone/lade die übrigen Updates temporär herunter, **ohne sie zu installieren oder Scripte auszuführen**.
+8. Führe die in diesem Skill beschriebenen statischen Prüfungen auf dem neuen Code durch.
+9. Generiere immer einen aggregierten JSON-Report **und** einen Markdown-Report. Der Markdown-Report muss Detailabschnitte für blockierte/quarantänisierte, fehlerhafte oder per Age-Gate verschobene Updates enthalten, damit abgelehnte Updates nachträglich erkundet werden können.
+10. Generiere einen Report, der angibt, welche Pi-Erweiterungen sicher aktualisiert werden können. **Präsentiere am Ende des Berichts immer einen maßgeschneiderten nativen `pi update`-Vorschlag (siehe Abschnitt "Natives Pi-Paketmanagement (`pi update`)"), der blockierte/quarantänisierte oder zu frische Pakete explizit auslässt.**
 
 ### Spezifischer Workflow (mit Parametern)
 
@@ -62,6 +64,7 @@ Der Skill ist bewusst auf npm und TypeScript zugeschnitten. Er prüft insbesonde
 - `package.json`, `package-lock.json`, `npm-shrinkwrap.json`, `pnpm-lock.yaml`, `yarn.lock`, `.npmrc`.
 - npm-Lifecycle-Scripts wie `preinstall`, `install`, `postinstall`, `prepare`, `prepack`, `prepublish`.
 - `optionalDependencies`, Git-/URL-/File-Dependencies, Aliase, Overrides und Resolutions.
+- Trusted Peer-Dependency-Allowlist: breite Peer-Ranges für konfigurierte vertrauenswürdige Paketnamen oder Scopes werden als INFO dokumentiert, nicht blockierend bewertet. Default: `@earendil-works/*`.
 - npm-Tarballs (`.tgz`) ohne Installation oder Script-Ausführung.
 - TypeScript-/JavaScript-Quellen, `dist/`, `lib/`, CLI-`bin`-Entrypoints und minifizierte/obfuskierte Dateien.
 - GitHub Actions und Publish-/Release-Workflows.
@@ -178,6 +181,7 @@ Blockiere oder eskaliere bei:
 - Script-Inhalte mit `curl`, `wget`, `fetch`, `axios`, `got`, `node -e`, `eval`, `new Function`, `child_process`, `execSync`, `spawn`, `bun`, `python`, `bash`, `powershell`, `chmod +x`, Base64-/zlib-/AES-Decodern.
 - Kombinationen wie Download plus Execute, Secret-Zugriff plus Netzwerk oder `&& exit 1` nach Ausführung.
 - `optionalDependencies` mit `github:`, `git+`, `http(s)://`, `file:`, `link:` oder `npm:` Alias.
+- `peerDependencies` mit breiten Ranges (`*`, `^`, `~`, `>`, `<`) sind für vertrauenswürdige Peer-Scopes aus der Config erlaubt und werden als INFO geführt. Default: `@earendil-works/*`. Git-/URL-/File-/Alias-Specs bleiben reviewpflichtig.
 - `overrides` oder `resolutions`, die transitive Dependencies auf Git-/URL-/File-Quellen umbiegen.
 - `bundleDependencies`/`bundledDependencies`, besonders `true`.
 - `bin`-Entrypoints, die auf obfuskierte oder fehlende Dateien zeigen.
@@ -347,6 +351,13 @@ Jeder Befund enthält:
 - Warum riskant.
 - Empfohlene Maßnahme.
 - Status: `confirmed`, `needs-human-review`, `false-positive-candidate`.
+
+Automatisierte Pi-Update-Audits schreiben standardmäßig:
+
+- JSON: `/tmp/pi_audit_aggregated.json`
+- Markdown: `/tmp/pi_audit_report.md`
+
+Der Markdown-Report enthält neben Summary und Update-Vorschlag einen Abschnitt `Held Back / Rejected Update Details` für blockierte, quarantänisierte, fehlerhafte oder zu frische Updates.
 
 Nutze `templates/report.md` für manuelle Reviews und die Reports des Scanners für automatisierte Runs.
 

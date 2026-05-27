@@ -27,6 +27,7 @@ SECURITY_ENV_VARS = [
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TRIAGE_SCRIPT = SCRIPT_DIR / "npm_ts_static_triage.py"
+SUMMARIZE_SCRIPT = SCRIPT_DIR / "summarize_pi_dependency_audit.py"
 DEFAULT_PACKAGES_FILE = SCRIPT_DIR / "pi-default-packages.txt"
 DEFAULT_GIT_REPOS_FILE = SCRIPT_DIR / "pi-default-git-repos.txt"
 REPO_CONFIG_PATH = SKILL_DIR / "config.json"
@@ -178,22 +179,23 @@ def npm_tarball_url(package: str, version: str) -> str:
     return url
 
 
-def scan_with_triage(target: Path, mode: str, report_json: Path) -> dict[str, Any]:
-    run(
-        [
-            "python3",
-            str(TRIAGE_SCRIPT),
-            str(target),
-            "--mode",
-            mode,
-            "--json",
-            str(report_json),
-        ]
-    )
+def scan_with_triage(target: Path, mode: str, report_json: Path, config_path: str = "") -> dict[str, Any]:
+    cmd = [
+        "python3",
+        str(TRIAGE_SCRIPT),
+        str(target),
+        "--mode",
+        mode,
+        "--json",
+        str(report_json),
+    ]
+    if config_path:
+        cmd.extend(["--config", config_path])
+    run(cmd)
     return json.loads(report_json.read_text(encoding="utf-8"))
 
 
-def audit_npm_packages(workspace: Path, packages: list[str], min_age_hours: float) -> list[dict[str, Any]]:
+def audit_npm_packages(workspace: Path, packages: list[str], min_age_hours: float, config_path: str = "") -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
     global_root = npm_global_root()
 
@@ -279,7 +281,7 @@ def audit_npm_packages(workspace: Path, packages: list[str], min_age_hours: floa
             urllib.request.urlretrieve(tarball_url, tarball_path)
 
             report_json = workspace / f"{package.replace('/', '_')}_{latest}_report.json"
-            report_data = scan_with_triage(tarball_path, "package", report_json)
+            report_data = scan_with_triage(tarball_path, "package", report_json, config_path)
             decision = report_data.get("decision", "UNKNOWN")
             print(f"  - triage decision: {decision}")
 
@@ -334,7 +336,7 @@ def repo_update_info(repo_path: Path) -> tuple[str, str, str, dt.datetime | None
     return branch, current, remote, remote_time
 
 
-def audit_git_repos(workspace: Path, repos: list[str], min_age_hours: float) -> list[dict[str, Any]]:
+def audit_git_repos(workspace: Path, repos: list[str], min_age_hours: float, config_path: str = "") -> list[dict[str, Any]]:
     results: list[dict[str, Any]] = []
 
     print(f"[git] Checking {len(repos)} repo(s)…")
@@ -420,7 +422,7 @@ def audit_git_repos(workspace: Path, repos: list[str], min_age_hours: float) -> 
             run(["git", "-C", str(clone_target), "checkout", "--detach", remote])
 
             report_json = workspace / f"{repo_path.name}_{remote[:8]}_report.json"
-            report_data = scan_with_triage(clone_target, "repo", report_json)
+            report_data = scan_with_triage(clone_target, "repo", report_json, config_path)
             decision = report_data.get("decision", "UNKNOWN")
             print(f"  - triage decision: {decision}")
 
@@ -482,6 +484,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repos-file", default=str(DEFAULT_GIT_REPOS_FILE), help="Path to newline-separated git repo path list")
     parser.add_argument("--workspace", default="", help="Workspace dir (default: temporary directory)")
     parser.add_argument("--output", default="/tmp/pi_audit_aggregated.json", help="Aggregated JSON output path")
+    parser.add_argument("--markdown-output", default="/tmp/pi_audit_report.md", help="Markdown summary output path")
     parser.add_argument("--config", default="", help="Optional config JSON path (highest precedence)")
     return parser.parse_args()
 
@@ -514,12 +517,20 @@ def main() -> int:
     print(f"Workspace: {workspace}")
 
     results: list[dict[str, Any]] = []
-    results.extend(audit_npm_packages(workspace, packages, min_age_hours))
-    results.extend(audit_git_repos(workspace, repos, min_age_hours))
+    results.extend(audit_npm_packages(workspace, packages, min_age_hours, args.config))
+    results.extend(audit_git_repos(workspace, repos, min_age_hours, args.config))
 
     output = Path(args.output)
     output.write_text(json.dumps(results, indent=2), encoding="utf-8")
     print(f"Wrote aggregated report: {output}")
+
+    markdown_output = Path(args.markdown_output)
+    if SUMMARIZE_SCRIPT.exists():
+        run(["python3", str(SUMMARIZE_SCRIPT), "--input", str(output), "--output", str(markdown_output)])
+        print(f"Wrote markdown report: {markdown_output}")
+    else:
+        print(f"Markdown summarizer not found: {SUMMARIZE_SCRIPT}", file=sys.stderr)
+
     summarize_results(results)
     return 0
 

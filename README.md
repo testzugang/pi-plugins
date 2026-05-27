@@ -150,7 +150,7 @@ _Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpoc
 
 ### [`dependency-audit`](packages/pi-dependency-audit)
 
-Static-first review of TypeScript dependencies, npm packages, and GitHub repositories for supply-chain malware and risky scripts.
+Static-first review of TypeScript dependencies, npm packages, and GitHub repositories for supply-chain malware and risky scripts. Global Pi audits write JSON plus Markdown reports, including held-back/rejected update details. Default config treats `@earendil-works/*` as trusted peer dependency scope only; normal dependencies remain strict.
 
 Install the package, then run:
 
@@ -167,10 +167,10 @@ When run without parameters, the skill asks first whether to audit pi dependenci
 For reusable global-pi checks and interactive terminal updates, see:
 
 - [`packages/pi-dependency-audit/skills/dependency-audit/scripts/pi-check-*.sh`](packages/pi-dependency-audit/skills/dependency-audit/scripts)
-- [`packages/pi-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py`](packages/pi-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py)
-- [`packages/pi-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py`](packages/pi-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py)
+- [`packages/pi-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py`](packages/pi-dependency-audit/skills/dependency-audit/scripts/run_pi_dependency_audit.py) (writes `/tmp/pi_audit_aggregated.json` and `/tmp/pi_audit_report.md` by default)
+- [`packages/pi-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py`](packages/pi-dependency-audit/skills/dependency-audit/scripts/summarize_pi_dependency_audit.py) (Markdown summary with rejected/held-back details)
 - [`packages/pi-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py`](packages/pi-dependency-audit/skills/dependency-audit/scripts/pi-interactive-update.py) (interactive CLI selector)
-- [`packages/pi-dependency-audit/skills/dependency-audit/config.json`](packages/pi-dependency-audit/skills/dependency-audit/config.json) (default age-gate: 24h)
+- [`packages/pi-dependency-audit/skills/dependency-audit/config.json`](packages/pi-dependency-audit/skills/dependency-audit/config.json) (default age-gate: 24h; trusted peer scope: `@earendil-works/*`)
 
 #### Pimp `pi update` with security checks
 

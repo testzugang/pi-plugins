@@ -188,6 +188,43 @@ def render_markdown(results: list[dict[str, Any]]) -> str:
             )
         md.append("")
 
+    held_back = blocked + deferred + errors
+    if held_back:
+        md.append("## 🚫 Held Back / Rejected Update Details")
+        md.append("")
+        for item in held_back:
+            md.append(
+                f"### `{item.get('name','?')}` ({short_rev(item.get('current'))} ➜ {short_rev(item.get('latest'))})"
+            )
+            md.append(f"- **Status:** {item.get('status', 'unknown')}")
+            md.append(f"- **Decision:** {decision_label(str(item.get('decision', 'UNKNOWN')))}")
+            if item.get("error"):
+                md.append(f"- **Error:** {item.get('error')}")
+            findings = item.get("findings", []) if isinstance(item.get("findings"), list) else []
+            significant = significant_findings(findings)
+            if significant:
+                md.append("- **Top significant findings:**")
+                for finding in significant[:10]:
+                    line = finding.get("line")
+                    line_suffix = f":{line}" if line else ""
+                    md.append(
+                        f"  - [{finding.get('severity','?')}] {finding.get('title','?')} — `{finding.get('path','?')}{line_suffix}`"
+                    )
+                    recommendation = finding.get("recommendation")
+                    if recommendation:
+                        md.append(f"    - Recommendation: {recommendation}")
+                if len(significant) > 10:
+                    md.append(f"  - … {len(significant) - 10} more significant finding(s)")
+            elif item.get("status") == "too_fresh":
+                age = item.get("update_age_hours")
+                threshold = item.get("min_update_age_hours")
+                age_str = f"{age:.1f}h" if isinstance(age, (int, float)) else "unknown"
+                threshold_str = f"{threshold:.1f}h" if isinstance(threshold, (int, float)) else "unknown"
+                md.append(f"- **Reason:** Update age {age_str} is below configured minimum {threshold_str}.")
+            else:
+                md.append("- No scanner findings were attached; inspect audit error/status above.")
+            md.append("")
+
     md.append("## 💡 Recommendation")
     md.append("")
     md.append(f"- Safe to update now: **{len(safe)}**")

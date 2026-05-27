@@ -8,6 +8,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 RUN_AUDIT_SCRIPT = SCRIPT_DIR / "run_pi_dependency_audit.py"
 AGGREGATED_JSON = Path("/tmp/pi_audit_aggregated.json")
+MARKDOWN_REPORT = Path("/tmp/pi_audit_report.md")
 
 def main():
     print("\n🛡️ Starte Sicherheits-Audit der Pi-Abhängigkeiten...")
@@ -21,6 +22,8 @@ def main():
     if not AGGREGATED_JSON.exists():
         print("❌ Audit-Ergebnisdatei nicht gefunden.")
         return 1
+    if MARKDOWN_REPORT.exists():
+        print(f"📄 Detail-Report: {MARKDOWN_REPORT}")
         
     try:
         results = json.loads(AGGREGATED_JSON.read_text(encoding="utf-8"))
@@ -80,6 +83,8 @@ def main():
     print(" - 'safe' für alle als sicher eingestuften Updates")
     print(" - 'all' für alle Updates (inkl. Warnungen/Quarantäne, auf eigene Gefahr!)")
     print(" - 'q' zum Abbrechen")
+    if MARKDOWN_REPORT.exists():
+        print(f"\nDetails zu blockierten/verschobenen Updates: {MARKDOWN_REPORT}")
     
     try:
         user_input = input("\nDeine Auswahl: ").strip().lower()
