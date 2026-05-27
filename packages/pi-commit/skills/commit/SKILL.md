@@ -21,7 +21,9 @@ Do not commit without explicit confirmation.
 2. Decide path:
    - **If files are already staged:** use fast-path (no staging questions).
    - **If nothing is staged and user requested staging/commit all:** show candidate files once and ask once before staging.
-   - **If nothing is staged and no staging was requested:** stop and tell the user no staged changes.
+   - **If nothing is staged and recent assistant work produced unstaged/untracked changes:** treat the commit request as implicit staging intent. Show candidate files once, including any unstaged/untracked files so unrelated leftovers are visible, and ask once before staging.
+   - **If nothing is staged and there is no explicit staging request or recent assistant work context:** stop and tell the user no staged changes.
+   - **After any staging step:** rerun `git status --short`, `git diff --cached --stat`, and `git diff --cached` before drafting the commit.
 3. Check whether staged changes contain multiple unrelated concerns.
    - If yes, recommend separate commits and ask how to proceed.
 4. Gather message inputs with minimal churn:
@@ -69,7 +71,8 @@ Keep the subject under 72 characters when possible. The subject should describe 
 - **Always require one explicit final confirmation before `git commit`.**
 - Do not ask duplicate confirmations for the same decision.
 - If files are already staged, do not ask extra staging questions.
-- If user asked for staging (`stage and commit` / `commit all`), ask once for file selection, then proceed to final confirmation.
+- If staging is needed because the user requested it or the current session just produced unstaged/untracked changes, ask once for file selection, then proceed to final confirmation.
+- Never stage files silently. Recent assistant work plus a commit request implies staging intent, but not staging consent.
 
 ## Confirmation Prompt
 
@@ -125,7 +128,9 @@ If a hook fails:
 | Mistake                                     | Correction                                                                       |
 | ------------------------------------------- | -------------------------------------------------------------------------------- |
 | Committing without reading the staged diff. | Always inspect staged changes first.                                             |
-| Staging all files automatically.            | Ask before staging unless explicitly requested.                                  |
+| Staging all files silently.                 | Ask once before staging; recent assistant work plus a commit request implies staging intent, but not staging consent. |
+| Warning after active work that nothing is staged. | Treat the commit request as implicit staging intent, show all candidate files, and ask once before staging. |
+| Drafting from stale staged diff after staging. | Rerun staged status/stat/diff after staging and before writing the message. |
 | Asking the same confirmation twice.         | Use one staging confirmation (only if needed) and one final commit confirmation. |
 | Writing a message with no “why.”            | Ask for motivation and include it in the body.                                   |
 | Choosing a gitmoji silently when ambiguous. | Offer likely options with `user_select`.                                         |

@@ -70,15 +70,15 @@ Use after creating or editing `AGENTS.md`.
 
 ### [`commit`](packages/pi-commit)
 
-Creates gitmoji commits with staged-diff review, motivation, message proposal, and confirmation.
+Creates gitmoji commits with staged-diff review, motivation, message proposal, and confirmation. It can also stage recent session changes after one explicit file-selection confirmation.
 
-Install the package, stage your changes, then run:
+Install the package, then run:
 
 ```text
 /skill:commit
 ```
 
-The skill asks for motivation, proposes a commit message, and confirms before running `git commit`.
+The skill asks for motivation, proposes a commit message, confirms any needed staging, and confirms before running `git commit`.
 
 ### [`pr-findings`](packages/pi-pr-findings)
 
