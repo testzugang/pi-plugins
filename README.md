@@ -150,7 +150,7 @@ _Ported and optimized for pi from [mattpocock/skills](https://github.com/mattpoc
 
 ### [`dependency-audit`](packages/pi-dependency-audit)
 
-Static-first review of TypeScript dependencies, npm packages, and GitHub repositories for supply-chain malware and risky scripts. Global Pi audits write JSON plus Markdown reports, including held-back/rejected update details. Default config treats `@earendil-works/*` as trusted peer dependency scope only; normal dependencies remain strict.
+Static-first review of TypeScript dependencies, npm packages, and GitHub repositories for supply-chain malware and risky scripts. Dependency updates are diff-aware: findings are split into new/changed vs inherited, and only new or changed risks block updates. Global Pi audits write JSON plus Markdown reports, including held-back/rejected update details. Default config treats `@earendil-works/*` as trusted peer dependency scope only; normal dependencies remain strict.
 
 Install the package, then run:
 

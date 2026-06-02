@@ -59,6 +59,24 @@ Führe dann je nach Auswahl die entsprechenden Szenarien aus:
 
 Wenn der Skill mit einem Paketnamen oder einer Repository-URL aufgerufen wird, fokussiere die Prüfung ausschließlich auf dieses Ziel. Lade den Code in ein temporäres Verzeichnis herunter und wende die Prüfphasen statisch an.
 
+### Diff-first-Regel für Dependency-Updates
+
+Bei Dependency-Updates immer zuerst Baseline und Zielversion vergleichen. Findings immer in diese Klassen trennen:
+
+- `new in update`
+- `changed in existing code`
+- `inherited / unchanged`
+
+Regeln:
+
+1. Blocker nur aus neuen oder geänderten Risiken ableiten.
+2. Unveränderte Risiken aus der Altversion nur als Kontext / Appendix führen.
+3. Jeder `CRITICAL`- oder `HIGH`-Fund braucht Diff-Bezug: welche Zeilen neu oder anders sind und was das Update konkret dazugebracht hat.
+4. Ohne Delta gilt der Fund als `inherited`.
+5. Metadaten (`repository.url`, `homepage`, `bugs`, `license`) nie als `CRITICAL` werten, höchstens als `INFO`.
+6. Opt-in-Features nur dann hoch werten, wenn sie neu sind oder Default-Verhalten ändern.
+7. Der Report braucht immer zwei Blöcke: `New / Changed Findings` und `Inherited Findings`.
+
 Der Skill ist bewusst auf npm und TypeScript zugeschnitten. Er prüft insbesondere:
 
 - `package.json`, `package-lock.json`, `npm-shrinkwrap.json`, `pnpm-lock.yaml`, `yarn.lock`, `.npmrc`.
