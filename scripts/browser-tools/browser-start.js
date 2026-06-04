@@ -28,9 +28,24 @@ if (process.argv[2] && process.argv[2] !== "--profile") {
   process.exit(1);
 }
 
-// Kill existing Chrome
+// Kill only previous automation Chrome instances (on port 9222 or running with remote-debugging)
 try {
-  execSync("killall 'Google Chrome'", { stdio: "ignore" });
+  const pids = execSync("lsof -t -i :9222", { encoding: "utf8" }).trim().split("\n").filter(Boolean);
+  for (const pid of pids) {
+    try { process.kill(Number(pid), "SIGKILL"); } catch {}
+  }
+} catch {}
+
+try {
+  const output = execSync("ps aux | grep 'Google Chrome' | grep 'remote-debugging-port=9222'", { encoding: "utf8" });
+  for (const line of output.split("\n")) {
+    if (line.includes("grep")) continue;
+    const parts = line.trim().split(/\s+/);
+    const pid = parts[1];
+    if (pid && !isNaN(pid)) {
+      try { process.kill(Number(pid), "SIGKILL"); } catch {}
+    }
+  }
 } catch {}
 
 // Wait a bit for processes to fully die
