@@ -221,6 +221,39 @@ For guidance during browser tasks, run:
 
 Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project or `~/.pi/agent/browser-tools.json` for the user.
 
+### [`session-branding`](extensions/session-branding)
+
+Visual and acoustic session identification for background and backgrounded tabs.
+
+Install the package, then use the branding commands inside any session:
+
+```text
+/session-name Feature Development
+/session-color
+/session-color blue
+```
+
+#### Capabilities
+
+- **Session Name**: Set an explicit session name. It updates the terminal/tab title and persists inside your session `.jsonl` file.
+- **Repository Branding**: Saves a custom color (represented by a high-contrast circle emoji 🔴, 🔵, 🟢...) and optional sound trigger in `.pi/branding.json` inside your workspace. This branding is loaded automatically across all future sessions in this workspace.
+- **Tab Title Status Tracking**: Prepends the current session status live inside your terminal tab title:
+  - `💤` (Idle / Waiting for user input)
+  - `⏳` (Thinking / LLM processing)
+  - `⚙️` (Executing / Running tools)
+  - `⚠️` (Blocked / Awaiting interaction)
+- **Blocked Sound Notification**: Plays the terminal bell (`\x07`) or a custom sound command (e.g., `afplay /System/Library/Sounds/Glass.aiff` on macOS) when the session enters the `Blocked` state waiting for you.
+
+To configure a custom sound command, add it directly to `.pi/branding.json` in your repository:
+
+```json
+{
+  "color": "blue",
+  "soundCommand": "afplay /System/Library/Sounds/Glass.aiff"
+}
+```
+
+
 ## Current resources
 
 ### Skills
@@ -238,6 +271,7 @@ Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project 
 ### Extensions
 
 - [`browser-tools`](extensions/browser-tools)
+- [`session-branding`](extensions/session-branding)
 - [`pr-findings`](packages/pi-pr-findings)
 
 ## Repository layout
