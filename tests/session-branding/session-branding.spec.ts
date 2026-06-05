@@ -109,7 +109,7 @@ describe("session-branding extension", () => {
     rmSync(tempCwd, { recursive: true, force: true });
   });
 
-  it("registers session-branding slash commands and lifecycle event handlers", () => {
+  it("registers a single session-branding slash command and lifecycle event handlers", () => {
     const recorded: Recorded = {
       commands: new Map(),
       events: new Map(),
@@ -122,10 +122,7 @@ describe("session-branding extension", () => {
     const extension = require("../../extensions/session-branding").default;
     extension(fakePi);
 
-    expect([...recorded.commands.keys()].sort()).toEqual([
-      "session-color",
-      "session-name",
-    ]);
+    expect([...recorded.commands.keys()].sort()).toEqual(["session-branding"]);
 
     expect([...recorded.events.keys()].sort()).toEqual([
       "agent_end",
@@ -161,8 +158,8 @@ describe("session-branding extension", () => {
     );
 
     // Set color via command
-    const colorCmd = recorded.commands.get("session-color")!;
-    await colorCmd.handler("red", ctx);
+    const brandingCmd = recorded.commands.get("session-branding")!;
+    await brandingCmd.handler("color red", ctx);
 
     // Should rewrite branding.json
     const brandingPath = join(tempCwd, ".pi", "branding.json");
@@ -216,7 +213,7 @@ describe("session-branding extension", () => {
     );
   });
 
-  it("supports color selection via UI select", async () => {
+  it("supports color selection via interactive UI select", async () => {
     const recorded: Recorded = {
       commands: new Map(),
       events: new Map(),
@@ -230,17 +227,81 @@ describe("session-branding extension", () => {
     extension(fakePi);
 
     const { ctx, select } = makeFakeCtx(tempCwd);
-    select.mockReturnValue(Promise.resolve("green"));
+    select.mockImplementation((question: string) => {
+      if (question.includes("Was möchtest du konfigurieren?")) {
+        return Promise.resolve("🎨 Repository-Farbe ändern");
+      }
+      return Promise.resolve("green");
+    });
 
-    const colorCmd = recorded.commands.get("session-color")!;
-    await colorCmd.handler("", ctx);
+    const brandingCmd = recorded.commands.get("session-branding")!;
+    await brandingCmd.handler("", ctx);
 
-    expect(select).toHaveBeenCalledWith(
+    expect(select).toHaveBeenNthCalledWith(
+      2,
       "Wähle eine Repository-Farbe:",
       expect.any(Array),
     );
     expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
       expect.stringContaining("🟢 Test Session"),
+    );
+  });
+
+  it("supports session name configuration via interactive UI input", async () => {
+    const recorded: Recorded = {
+      commands: new Map(),
+      events: new Map(),
+      setSessionName: jest.fn(),
+      getSessionName: jest.fn(() => "Old Name"),
+    };
+    const fakePi = makeFakePi(recorded);
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const extension = require("../../extensions/session-branding").default;
+    extension(fakePi);
+
+    const { ctx, select } = makeFakeCtx(tempCwd);
+    select.mockReturnValue(Promise.resolve("🏷️ Session-Name ändern"));
+
+    const inputMock = ctx.ui.input as jest.Mock;
+    inputMock.mockReturnValue(Promise.resolve("New Custom Name"));
+
+    const brandingCmd = recorded.commands.get("session-branding")!;
+    await brandingCmd.handler("", ctx);
+
+    expect(fakePi.setSessionName).toHaveBeenCalledWith("New Custom Name");
+  });
+
+  it("supports sound command configuration via interactive UI input", async () => {
+    const recorded: Recorded = {
+      commands: new Map(),
+      events: new Map(),
+      setSessionName: jest.fn(),
+      getSessionName: jest.fn(() => "Test Session"),
+    };
+    const fakePi = makeFakePi(recorded);
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const extension = require("../../extensions/session-branding").default;
+    extension(fakePi);
+
+    const { ctx, select, notify } = makeFakeCtx(tempCwd);
+    select.mockReturnValue(Promise.resolve("🔊 Blocked-Sound-Befehl ändern"));
+
+    const inputMock = ctx.ui.input as jest.Mock;
+    inputMock.mockReturnValue(Promise.resolve("say beep"));
+
+    const brandingCmd = recorded.commands.get("session-branding")!;
+    await brandingCmd.handler("", ctx);
+
+    const brandingPath = join(tempCwd, ".pi", "branding.json");
+    expect(JSON.parse(readFileSync(brandingPath, "utf8"))).toEqual({
+      color: "blue",
+      soundCommand: "say beep",
+    });
+    expect(notify).toHaveBeenCalledWith(
+      expect.stringContaining("Sound-Befehl geändert in: say beep"),
+      "info",
     );
   });
 
@@ -380,7 +441,7 @@ describe("session-branding extension", () => {
     writeSpy.mockRestore();
   });
 
-  it("rejects invalid colors without saving", async () => {
+  it("rejects invalid colors without saving via direct command", async () => {
     const recorded: Recorded = {
       commands: new Map(),
       events: new Map(),
@@ -394,14 +455,58 @@ describe("session-branding extension", () => {
     extension(fakePi);
 
     const { ctx, notify } = makeFakeCtx(tempCwd);
-    const colorCmd = recorded.commands.get("session-color")!;
+    const brandingCmd = recorded.commands.get("session-branding")!;
 
-    await colorCmd.handler("magenta", ctx);
+    await brandingCmd.handler("color magenta", ctx);
 
     expect(notify).toHaveBeenCalledWith(
       expect.stringContaining("Ungültige Farbe"),
       "error",
     );
     expect(existsSync(join(tempCwd, ".pi", "branding.json"))).toBe(false);
+  });
+
+  it("supports sound command configuration via direct subcommand", async () => {
+    const recorded: Recorded = {
+      commands: new Map(),
+      events: new Map(),
+      setSessionName: jest.fn(),
+      getSessionName: jest.fn(() => "Test Session"),
+    };
+    const fakePi = makeFakePi(recorded);
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const extension = require("../../extensions/session-branding").default;
+    extension(fakePi);
+
+    const { ctx, notify } = makeFakeCtx(tempCwd);
+    const brandingCmd = recorded.commands.get("session-branding")!;
+
+    // 1. Set sound command directly
+    await brandingCmd.handler("sound afplay /path/to/sound.aiff", ctx);
+
+    const brandingPath = join(tempCwd, ".pi", "branding.json");
+    expect(existsSync(brandingPath)).toBe(true);
+    expect(JSON.parse(readFileSync(brandingPath, "utf8"))).toEqual({
+      color: "blue",
+      soundCommand: "afplay /path/to/sound.aiff",
+    });
+    expect(notify).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Sound-Befehl geändert in: afplay /path/to/sound.aiff",
+      ),
+      "info",
+    );
+
+    // 2. Clear sound command (using "clear" or "default")
+    await brandingCmd.handler("sound clear", ctx);
+    expect(JSON.parse(readFileSync(brandingPath, "utf8"))).toEqual({
+      color: "blue",
+      soundCommand: "",
+    });
+    expect(notify).toHaveBeenLastCalledWith(
+      expect.stringContaining("Sound-Befehl auf Standard zurückgesetzt."),
+      "info",
+    );
   });
 });

@@ -213,37 +213,111 @@ export default function (pi: ExtensionAPI) {
   });
 
   // Slash commands
-  pi.registerCommand("session-name", {
-    description: "Setzt den Anzeigenamen der aktuellen Session",
+  pi.registerCommand("session-branding", {
+    description:
+      "Konfiguriert Name, Farbe oder Sound-Benachrichtigung für diese Session/dieses Repository",
     handler: async (args, ctx) => {
-      const name = args.trim();
-      if (!name) {
+      const parts = args.trim().split(/\s+/);
+      const subcommand = parts[0]?.toLowerCase();
+      const value = parts.slice(1).join(" ");
+
+      const colors = Object.keys(COLOR_MAP);
+
+      // 1. Direktaufrufe mit Argumenten
+      if (subcommand === "color") {
+        const colorVal = value.toLowerCase();
+        if (!colorVal) {
+          if (ctx.hasUI) {
+            ctx.ui.notify(
+              "Bitte gib eine Farbe an: /session-branding color <farbe>",
+              "warning",
+            );
+          }
+          return;
+        }
+        if (COLOR_MAP[colorVal]) {
+          currentBranding.color = colorVal;
+          saveConfig(ctx.cwd);
+          updateTabTitle(ctx);
+          updateWidget(ctx);
+          if (ctx.hasUI)
+            ctx.ui.notify(`Farbe geändert in: ${colorVal}`, "info");
+        } else {
+          if (ctx.hasUI) {
+            ctx.ui.notify(
+              `Ungültige Farbe. Unterstützt: ${colors.join(", ")}`,
+              "error",
+            );
+          }
+        }
+        return;
+      }
+
+      if (subcommand === "name") {
+        if (!value) {
+          if (ctx.hasUI) {
+            ctx.ui.notify(
+              "Bitte gib einen Session-Namen an: /session-branding name <name>",
+              "warning",
+            );
+          }
+          return;
+        }
+        pi.setSessionName(value);
+        updateTabTitle(ctx);
+        updateWidget(ctx);
+        if (ctx.hasUI)
+          ctx.ui.notify(`Session-Name geändert in: ${value}`, "info");
+        return;
+      }
+
+      if (subcommand === "sound") {
+        if (!value) {
+          if (ctx.hasUI) {
+            ctx.ui.notify(
+              "Bitte gib einen Sound-Befehl an: /session-branding sound <befehl> (oder 'clear'/'default')",
+              "warning",
+            );
+          }
+          return;
+        }
+        currentBranding.soundCommand =
+          value === "clear" || value === "default" ? "" : value;
+        saveConfig(ctx.cwd);
+        if (ctx.hasUI) {
+          const msg = currentBranding.soundCommand
+            ? `Sound-Befehl geändert in: ${currentBranding.soundCommand}`
+            : "Sound-Befehl auf Standard zurückgesetzt.";
+          ctx.ui.notify(msg, "info");
+        }
+        return;
+      }
+
+      // Falls ein ungültiger Unterbefehl übergeben wurde
+      if (subcommand) {
         if (ctx.hasUI) {
           ctx.ui.notify(
-            "Bitte gib einen Namen an: /session-name <name>",
-            "warning",
+            "Ungültiger Befehl. Verwendung:\n" +
+              "• /session-branding (interaktives Menü)\n" +
+              "• /session-branding color <farbe>\n" +
+              "• /session-branding name <name>\n" +
+              "• /session-branding sound <befehl>",
+            "error",
           );
         }
         return;
       }
-      pi.setSessionName(name);
-      updateTabTitle(ctx);
-      updateWidget(ctx);
-      if (ctx.hasUI) {
-        ctx.ui.notify(`Session-Name geändert in: ${name}`, "info");
-      }
-    },
-  });
 
-  pi.registerCommand("session-color", {
-    description: "Setzt die Farbe für dieses Repository",
-    handler: async (args, ctx) => {
-      const colorInput = args.trim().toLowerCase();
+      // 2. Interaktives Konfigurationsmenü (ohne Argumente)
+      if (!ctx.hasUI) return;
 
-      if (!colorInput) {
-        if (!ctx.hasUI) return;
+      const action = await ctx.ui.select("Was möchtest du konfigurieren?", [
+        "🎨 Repository-Farbe ändern",
+        "🏷️ Session-Name ändern",
+        "🔊 Blocked-Sound-Befehl ändern",
+      ]);
 
-        const colors = Object.keys(COLOR_MAP);
+      if (action === "🎨 Repository-Farbe ändern") {
         const selected = await ctx.ui.select(
           "Wähle eine Repository-Farbe:",
           colors,
@@ -255,23 +329,34 @@ export default function (pi: ExtensionAPI) {
           updateWidget(ctx);
           ctx.ui.notify(`Farbe geändert in: ${selected}`, "info");
         }
-        return;
-      }
-
-      if (COLOR_MAP[colorInput]) {
-        currentBranding.color = colorInput;
-        saveConfig(ctx.cwd);
-        updateTabTitle(ctx);
-        updateWidget(ctx);
-        if (ctx.hasUI) {
-          ctx.ui.notify(`Farbe geändert in: ${colorInput}`, "info");
+      } else if (action === "🏷️ Session-Name ändern") {
+        const currentName = pi.getSessionName() || "";
+        const entered = await ctx.ui.input(
+          `Aktueller Session-Name: ${currentName || "keiner"}\nNeuen Namen eingeben:`,
+        );
+        if (entered !== undefined && entered.trim()) {
+          pi.setSessionName(entered.trim());
+          updateTabTitle(ctx);
+          updateWidget(ctx);
+          ctx.ui.notify(`Session-Name geändert in: ${entered.trim()}`, "info");
         }
-      } else {
-        if (ctx.hasUI) {
-          ctx.ui.notify(
-            `Ungültige Farbe. Unterstützt: ${Object.keys(COLOR_MAP).join(", ")}`,
-            "error",
-          );
+      } else if (action === "🔊 Blocked-Sound-Befehl ändern") {
+        const currentSound =
+          currentBranding.soundCommand || "Standard (Terminal-Bell)";
+        const entered = await ctx.ui.input(
+          `Aktueller Sound-Befehl: ${currentSound}\nNeuen Befehl eingeben (oder 'clear'/'default' für Standard):`,
+        );
+        if (entered !== undefined) {
+          const cleanVal = entered.trim();
+          currentBranding.soundCommand =
+            cleanVal === "clear" || cleanVal === "default" || !cleanVal
+              ? ""
+              : cleanVal;
+          saveConfig(ctx.cwd);
+          const msg = currentBranding.soundCommand
+            ? `Sound-Befehl geändert in: ${currentBranding.soundCommand}`
+            : "Sound-Befehl auf Standard zurückgesetzt.";
+          ctx.ui.notify(msg, "info");
         }
       }
     },

@@ -225,34 +225,31 @@ Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project 
 
 Visual and acoustic session identification for background and backgrounded tabs.
 
-Install the package, then use the branding commands inside any session:
+Install the package, then configure your branding directly inside any session:
 
 ```text
-/session-name Feature Development
-/session-color
-/session-color blue
+/session-branding
+```
+
+Or configure specific settings directly:
+
+```text
+/session-branding name Feature Development
+/session-branding color blue
+/session-branding sound afplay /System/Library/Sounds/Glass.aiff
+/session-branding sound clear
 ```
 
 #### Capabilities
 
-- **Session Name**: Set an explicit session name. It updates the terminal/tab title and persists inside your session `.jsonl` file.
-- **Repository Branding**: Saves a custom color (represented by a high-contrast circle emoji 🔴, 🔵, 🟢...) and optional sound trigger in `.pi/branding.json` inside your workspace. This branding is loaded automatically across all future sessions in this workspace.
+- **Session Name**: Set an explicit session name via `/session-branding name <name>` or the interactive menu. It updates the terminal/tab title and persists inside your session `.jsonl` file.
+- **Repository Branding**: Saves a custom color (represented by a high-contrast circle emoji 🔴, 🔵, 🟢...) in `.pi/branding.json` inside your workspace. This branding is loaded automatically across all future sessions in this workspace. Configure it directly via `/session-branding color <farbe>` or through the interactive menu.
+- **Blocked Sound Notification**: Plays the terminal bell (`\x07`) or a custom sound command (e.g., `afplay /System/Library/Sounds/Glass.aiff` on macOS) when the session enters the `Blocked` state waiting for you. Configure it directly via `/session-branding sound <befehl>` or through the interactive menu.
 - **Tab Title Status Tracking**: Prepends the current session status live inside your terminal tab title:
   - `💤` (Idle / Waiting for user input)
   - `⏳` (Thinking / LLM processing)
   - `⚙️` (Executing / Running tools)
   - `⚠️` (Blocked / Awaiting interaction)
-- **Blocked Sound Notification**: Plays the terminal bell (`\x07`) or a custom sound command (e.g., `afplay /System/Library/Sounds/Glass.aiff` on macOS) when the session enters the `Blocked` state waiting for you.
-
-To configure a custom sound command, add it directly to `.pi/branding.json` in your repository:
-
-```json
-{
-  "color": "blue",
-  "soundCommand": "afplay /System/Library/Sounds/Glass.aiff"
-}
-```
-
 
 ## Current resources
 
