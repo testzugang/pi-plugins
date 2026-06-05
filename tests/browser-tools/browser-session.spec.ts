@@ -153,7 +153,9 @@ describe("browser-session extension", () => {
     const rec = setup();
 
     expect([...rec.commands.keys()].sort()).toEqual([
+      "browser",
       "browser-eval",
+      "browser-executable",
       "browser-nav",
       "browser-profile",
       "browser-screenshot",
@@ -586,6 +588,27 @@ describe("browser-session extension", () => {
       "Screenshot captured: /tmp/browser-shot.png",
     );
     expect(result.details).toEqual({ path: "/tmp/browser-shot.png" });
+  });
+
+  it("master browser command delegates to correct sub-handlers", async () => {
+    const rec = setup();
+    const { ctx } = makeCtx();
+
+    // Test start
+    await getCommand(rec, "browser").handler("start profile", ctx);
+    expect(rec.exec).toHaveBeenCalledWith(
+      join(BROWSER_TOOLS_DIR, "browser-start.js"),
+      ["--profile"],
+      expect.objectContaining({ timeout: 10000 }),
+    );
+
+    // Test nav
+    await getCommand(rec, "browser").handler("nav https://google.com", ctx);
+    expect(rec.exec).toHaveBeenCalledWith(
+      join(BROWSER_TOOLS_DIR, "browser-nav.js"),
+      ["https://google.com"],
+      expect.objectContaining({ timeout: 10000 }),
+    );
   });
 
   it("browser tools throw on script failure", async () => {

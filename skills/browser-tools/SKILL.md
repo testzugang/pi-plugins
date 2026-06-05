@@ -9,8 +9,22 @@ Use the browser tools when a task needs a real Chrome session: frontend testing,
 
 ## Available Commands
 
-- `/browser-profile` - select an available Chrome profile and save it as the project default in `.pi/browser-tools.json`.
-- `/browser-profile clear` - remove the project default profile.
+- `/browser` - Master-Befehl zur Steuerung und Interaktion mit dem Browser. Wird er ohne Argumente aufgerufen, öffnet sich ein interaktives Konfigurationsmenü. Unterstützt folgende Subcommands:
+  - `start [profile]` – Browser starten (optional mit bestimmtem Profil)
+  - `profile [name]` – Chrome-Profil als Standard festlegen (`clear` zum Löschen)
+  - `executable [path]` – Browser-Executable als Standard festlegen (`clear` zum Löschen)
+  - `nav <url>` – URL aufrufen
+  - `eval <code>` – JavaScript ausführen
+  - `screenshot` – Screenshot aufnehmen
+
+Die alten Einzelbefehle stehen weiterhin als direkte Aliase zur Verfügung:
+
+- `/browser-start` – entspricht `/browser start`
+- `/browser-profile` – entspricht `/browser profile`
+- `/browser-executable` – entspricht `/browser executable`
+- `/browser-nav` – entspricht `/browser nav`
+- `/browser-eval` – entspricht `/browser eval`
+- `/browser-screenshot` – entspricht `/browser screenshot`
 
 ## Available Tools
 
@@ -45,8 +59,15 @@ Project defaults can also be set manually in `.pi/browser-tools.json`:
 
 ```json
 {
-  "profile": "Profile 2"
+  "profile": "Profile 2",
+  "executablePath": "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
 }
+```
+
+Or configure via environment variable `PI_CHROME_PATH`:
+
+```bash
+export PI_CHROME_PATH="/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
 ```
 
 Prefer a fresh session for ordinary frontend testing so state is reproducible.

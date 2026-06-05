@@ -35,6 +35,12 @@ type ProfileSelection = boolean | string;
 
 type BrowserToolsConfig = {
   profile?: ProfileSelection;
+  executablePath?: string;
+};
+
+type BrowserExecutable = {
+  name: string;
+  path: string;
 };
 
 type ChromeProfile = {
@@ -46,137 +52,283 @@ type ChromeProfile = {
 export default function (pi: ExtensionAPI) {
   registerBrowserTools(pi);
 
+  const startHandler = async (args: string, ctx: any) => {
+    const profile = parseStartArgs(args) ?? loadDefaultProfile();
+    const result = await runBrowserScript(
+      pi,
+      "browser-start.js",
+      profileArgs(profile),
+    );
+
+    if (!resultOk(result)) {
+      notify(ctx, `Browser start failed: ${failureMessage(result)}`, "error");
+      return;
+    }
+
+    notify(ctx, browserStartMessage(profile), "info");
+  };
+
+  const profileHandler = async (args: string, ctx: any) => {
+    if (args.trim() === "clear") {
+      clearProjectDefaultProfile();
+      notify(ctx, "Project browser profile default cleared", "info");
+      return;
+    }
+
+    const profiles = discoverChromeProfiles();
+    if (profiles.length === 0) {
+      notify(ctx, "No Chrome profiles found", "warning");
+      return;
+    }
+
+    if (!ctx.hasUI) {
+      notify(
+        ctx,
+        `Available Chrome profiles:\n${profiles.map((profile) => `- ${profile.directory}`).join("\n")}`,
+        "info",
+      );
+      return;
+    }
+
+    const labels = profiles.map((profile) => profile.label);
+    const choice = await ctx.ui.select("Select default Chrome profile", labels);
+    if (!choice) return;
+
+    const selected = profiles.find((profile) => profile.label === choice);
+    if (!selected) return;
+
+    writeProjectDefaultProfile(selected.directory);
+    notify(
+      ctx,
+      `Project browser profile default set to ${selected.directory}`,
+      "info",
+    );
+  };
+
+  const executableHandler = async (args: string, ctx: any) => {
+    if (args.trim() === "clear") {
+      clearProjectDefaultExecutable();
+      notify(ctx, "Project browser executable default cleared", "info");
+      return;
+    }
+
+    const executables = discoverExecutables();
+    if (executables.length === 0) {
+      notify(
+        ctx,
+        "No Chrome/Chromium executables found on the system",
+        "warning",
+      );
+      return;
+    }
+
+    if (!ctx.hasUI) {
+      notify(
+        ctx,
+        `Available executables:\n${executables.map((e) => `- ${e.name} (${e.path})`).join("\n")}`,
+        "info",
+      );
+      return;
+    }
+
+    const labels = executables.map((e) => `${e.name} (${e.path})`);
+    const choice = await ctx.ui.select(
+      "Select default Chrome/Chromium executable",
+      labels,
+    );
+    if (!choice) return;
+
+    const selected = executables.find(
+      (e) => `${e.name} (${e.path})` === choice,
+    );
+    if (!selected) return;
+
+    writeProjectDefaultExecutable(selected.path);
+    notify(
+      ctx,
+      `Project browser executable default set to ${selected.name}`,
+      "info",
+    );
+  };
+
+  const navHandler = async (args: string, ctx: any) => {
+    const parsed = parseNavArgs(args);
+    if (!parsed) {
+      notify(ctx, "Usage: /browser-nav https://example.com [--new]", "error");
+      return;
+    }
+
+    const scriptArgs = parsed.newTab ? [parsed.url, "--new"] : [parsed.url];
+    const result = await runBrowserScript(pi, "browser-nav.js", scriptArgs);
+
+    if (!resultOk(result)) {
+      notify(
+        ctx,
+        `Browser navigation failed: ${failureMessage(result)}`,
+        "error",
+      );
+      return;
+    }
+
+    notify(ctx, `Navigated to ${parsed.url}`, "info");
+  };
+
+  const evalHandler = async (args: string, ctx: any) => {
+    const code = args.trim();
+    if (!code) {
+      notify(ctx, "Usage: /browser-eval document.title", "error");
+      return;
+    }
+
+    const result = await runBrowserScript(pi, "browser-eval.js", [code]);
+
+    if (!resultOk(result)) {
+      notify(ctx, `Browser eval failed: ${failureMessage(result)}`, "error");
+      return;
+    }
+
+    notify(ctx, outputText(result, "Browser eval completed"), "info");
+  };
+
+  const screenshotHandler = async (_args: string, ctx: any) => {
+    const result = await runBrowserScript(pi, "browser-screenshot.js", []);
+
+    if (!resultOk(result)) {
+      notify(
+        ctx,
+        `Browser screenshot failed: ${failureMessage(result)}`,
+        "error",
+      );
+      return;
+    }
+
+    notify(
+      ctx,
+      `Screenshot captured: ${outputText(result, "unknown path")}`,
+      "info",
+    );
+  };
+
   pi.registerCommand("browser-start", {
     description:
       "Start Chrome with remote debugging for browser automation. Pass 'profile [name]' to copy a Chrome profile.",
-    handler: async (args, ctx) => {
-      const profile = parseStartArgs(args) ?? loadDefaultProfile();
-      const result = await runBrowserScript(
-        pi,
-        "browser-start.js",
-        profileArgs(profile),
-      );
-
-      if (!resultOk(result)) {
-        notify(ctx, `Browser start failed: ${failureMessage(result)}`, "error");
-        return;
-      }
-
-      notify(ctx, browserStartMessage(profile), "info");
-    },
+    handler: startHandler,
   });
 
   pi.registerCommand("browser-profile", {
     description:
       "Select a Chrome profile and save it as the project browser default. Use 'clear' to remove the project default.",
-    handler: async (args, ctx) => {
-      if (args.trim() === "clear") {
-        clearProjectDefaultProfile();
-        notify(ctx, "Project browser profile default cleared", "info");
-        return;
-      }
+    handler: profileHandler,
+  });
 
-      const profiles = discoverChromeProfiles();
-      if (profiles.length === 0) {
-        notify(ctx, "No Chrome profiles found", "warning");
-        return;
-      }
-
-      if (!ctx.hasUI) {
-        notify(
-          ctx,
-          `Available Chrome profiles:\n${profiles.map((profile) => `- ${profile.directory}`).join("\n")}`,
-          "info",
-        );
-        return;
-      }
-
-      const labels = profiles.map((profile) => profile.label);
-      const choice = await ctx.ui.select(
-        "Select default Chrome profile",
-        labels,
-      );
-      if (!choice) return;
-
-      const selected = profiles.find((profile) => profile.label === choice);
-      if (!selected) return;
-
-      writeProjectDefaultProfile(selected.directory);
-      notify(
-        ctx,
-        `Project browser profile default set to ${selected.directory}`,
-        "info",
-      );
-    },
+  pi.registerCommand("browser-executable", {
+    description:
+      "Select a Chrome/Chromium executable and save it as the project browser default. Use 'clear' to remove the project default.",
+    handler: executableHandler,
   });
 
   pi.registerCommand("browser-nav", {
     description:
       "Navigate the active browser tab to a URL. Usage: /browser-nav https://example.com [--new]",
-    handler: async (args, ctx) => {
-      const parsed = parseNavArgs(args);
-      if (!parsed) {
-        notify(ctx, "Usage: /browser-nav https://example.com [--new]", "error");
-        return;
-      }
-
-      const scriptArgs = parsed.newTab ? [parsed.url, "--new"] : [parsed.url];
-      const result = await runBrowserScript(pi, "browser-nav.js", scriptArgs);
-
-      if (!resultOk(result)) {
-        notify(
-          ctx,
-          `Browser navigation failed: ${failureMessage(result)}`,
-          "error",
-        );
-        return;
-      }
-
-      notify(ctx, `Navigated to ${parsed.url}`, "info");
-    },
+    handler: navHandler,
   });
 
   pi.registerCommand("browser-eval", {
     description:
       "Evaluate JavaScript in the active browser tab. Usage: /browser-eval document.title",
-    handler: async (args, ctx) => {
-      const code = args.trim();
-      if (!code) {
-        notify(ctx, "Usage: /browser-eval document.title", "error");
-        return;
-      }
-
-      const result = await runBrowserScript(pi, "browser-eval.js", [code]);
-
-      if (!resultOk(result)) {
-        notify(ctx, `Browser eval failed: ${failureMessage(result)}`, "error");
-        return;
-      }
-
-      notify(ctx, outputText(result, "Browser eval completed"), "info");
-    },
+    handler: evalHandler,
   });
 
   pi.registerCommand("browser-screenshot", {
     description:
       "Capture the active browser viewport and report the screenshot path.",
-    handler: async (_args, ctx) => {
-      const result = await runBrowserScript(pi, "browser-screenshot.js", []);
+    handler: screenshotHandler,
+  });
 
-      if (!resultOk(result)) {
-        notify(
-          ctx,
-          `Browser screenshot failed: ${failureMessage(result)}`,
-          "error",
-        );
+  pi.registerCommand("browser", {
+    description:
+      "Master command to manage and interact with the automation browser. Run without arguments for interactive menu.",
+    handler: async (args, ctx) => {
+      const parts = args.trim().split(/\s+/);
+      const subcommand = parts[0]?.toLowerCase();
+      const remainingArgs = parts.slice(1).join(" ");
+
+      if (subcommand === "start") {
+        await startHandler(remainingArgs, ctx);
+        return;
+      }
+      if (subcommand === "profile") {
+        await profileHandler(remainingArgs, ctx);
+        return;
+      }
+      if (subcommand === "executable" || subcommand === "exec") {
+        await executableHandler(remainingArgs, ctx);
+        return;
+      }
+      if (subcommand === "nav" || subcommand === "navigate") {
+        await navHandler(remainingArgs, ctx);
+        return;
+      }
+      if (subcommand === "eval") {
+        await evalHandler(remainingArgs, ctx);
+        return;
+      }
+      if (subcommand === "screenshot" || subcommand === "shot") {
+        await screenshotHandler(remainingArgs, ctx);
         return;
       }
 
-      notify(
-        ctx,
-        `Screenshot captured: ${outputText(result, "unknown path")}`,
-        "info",
-      );
+      if (subcommand) {
+        if (ctx.hasUI) {
+          ctx.ui.notify(
+            "Ungültiger Befehl. Verwendung:\n" +
+              "• /browser (interaktives Menü)\n" +
+              "• /browser start [profile]\n" +
+              "• /browser profile [name]\n" +
+              "• /browser executable [path]\n" +
+              "• /browser nav <url>\n" +
+              "• /browser eval <code>\n" +
+              "• /browser screenshot",
+            "error",
+          );
+        }
+        return;
+      }
+
+      if (!ctx.hasUI) return;
+
+      const action = await ctx.ui.select("Was möchtest du tun?", [
+        "🌐 Browser starten",
+        "👤 Chrome-Profil auswählen",
+        "🖥️ Chrome/Chromium Executable auswählen",
+        "🧭 URL aufrufen",
+        "💻 JavaScript ausführen",
+        "📸 Screenshot aufnehmen",
+      ]);
+
+      if (action === "🌐 Browser starten") {
+        await startHandler("", ctx);
+      } else if (action === "👤 Chrome-Profil auswählen") {
+        await profileHandler("", ctx);
+      } else if (action === "🖥️ Chrome/Chromium Executable auswählen") {
+        await executableHandler("", ctx);
+      } else if (action === "🧭 URL aufrufen") {
+        const url = await ctx.ui.input(
+          "Gib eine URL ein (z. B. https://example.com):",
+        );
+        if (url) {
+          await navHandler(url, ctx);
+        }
+      } else if (action === "💻 JavaScript ausführen") {
+        const code = await ctx.ui.input(
+          "Gib den JavaScript-Code ein (z. B. document.title):",
+        );
+        if (code) {
+          await evalHandler(code, ctx);
+        }
+      } else if (action === "📸 Screenshot aufnehmen") {
+        await screenshotHandler("", ctx);
+      }
     },
   });
 }
@@ -321,7 +473,15 @@ async function runBrowserScript(
   scriptName: string,
   args: string[],
 ): Promise<ExecResult> {
-  return pi.exec(scriptPath(scriptName), args, { timeout: EXEC_TIMEOUT_MS });
+  const env: Record<string, string> = { ...process.env };
+  const execPath = loadDefaultExecutablePath();
+  if (execPath) {
+    env.PI_CHROME_PATH = execPath;
+  }
+  return pi.exec(scriptPath(scriptName), args, {
+    timeout: EXEC_TIMEOUT_MS,
+    env,
+  });
 }
 
 function scriptPath(scriptName: string): string {
@@ -419,20 +579,94 @@ function chromeUserDataDir(): string {
   );
 }
 
-function writeProjectDefaultProfile(profile: string): void {
+function discoverExecutables(): BrowserExecutable[] {
+  const list: BrowserExecutable[] = [];
+  const candidates = [
+    {
+      name: "Google Chrome",
+      paths: [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        "/usr/bin/google-chrome",
+        "/usr/bin/google-chrome-stable",
+      ],
+    },
+    {
+      name: "Google Chrome Canary",
+      paths: [
+        "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
+      ],
+    },
+    {
+      name: "Chromium",
+      paths: [
+        "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+      ],
+    },
+  ];
+
+  for (const candidate of candidates) {
+    for (const path of candidate.paths) {
+      if (existsSync(path)) {
+        list.push({ name: candidate.name, path });
+        break;
+      }
+    }
+  }
+
+  return list;
+}
+
+function writeProjectConfig(update: Partial<BrowserToolsConfig>): void {
   const configPath = projectConfigPath(process.cwd());
   mkdirSync(dirname(configPath), { recursive: true });
-  writeFileSync(
-    `${configPath}.tmp`,
-    `${JSON.stringify({ profile }, null, 2)}\n`,
-  );
+
+  const existing = readConfig(configPath) || {};
+  const merged = { ...existing, ...update };
+
+  for (const key of Object.keys(merged) as Array<keyof BrowserToolsConfig>) {
+    if (merged[key] === undefined) {
+      delete merged[key];
+    }
+  }
+
+  if (Object.keys(merged).length === 0) {
+    rmSync(configPath, { force: true });
+    return;
+  }
+
+  writeFileSync(`${configPath}.tmp`, `${JSON.stringify(merged, null, 2)}\n`);
   rmSync(configPath, { force: true });
   writeFileSync(configPath, readFileSync(`${configPath}.tmp`, "utf8"));
   rmSync(`${configPath}.tmp`, { force: true });
 }
 
+function writeProjectDefaultProfile(profile: string): void {
+  writeProjectConfig({ profile });
+}
+
 function clearProjectDefaultProfile(): void {
-  rmSync(projectConfigPath(process.cwd()), { force: true });
+  writeProjectConfig({ profile: undefined });
+}
+
+function writeProjectDefaultExecutable(executablePath: string): void {
+  writeProjectConfig({ executablePath });
+}
+
+function clearProjectDefaultExecutable(): void {
+  writeProjectConfig({ executablePath: undefined });
+}
+
+function loadDefaultExecutablePath(): string | undefined {
+  const customEnv = process.env.PI_CHROME_PATH;
+  if (customEnv) return customEnv;
+
+  for (const path of configPaths()) {
+    const config = readConfig(path);
+    if (config?.executablePath) return config.executablePath;
+  }
+  return undefined;
 }
 
 function loadDefaultProfile(): ProfileSelection | undefined {
