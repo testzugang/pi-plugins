@@ -341,7 +341,7 @@ def audit_git_repos(workspace: Path, repos: list[str], min_age_hours: float, con
 
     print(f"[git] Checking {len(repos)} repo(s)…")
     for idx, repo in enumerate(repos, start=1):
-        repo_path = Path(repo)
+        repo_path = Path(repo).expanduser()
         print(f"[git {idx}/{len(repos)}] {repo_path}")
         info = repo_update_info(repo_path)
         if info is None:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import tempfile
@@ -10,6 +11,14 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 TRIAGE_SCRIPT = SCRIPT_DIR / "npm_ts_static_triage.py"
 RUN_AUDIT_SCRIPT = SCRIPT_DIR / "run_pi_dependency_audit.py"
+
+
+def load_run_audit_module():
+    spec = importlib.util.spec_from_file_location("run_pi_dependency_audit", RUN_AUDIT_SCRIPT)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def run_cmd(args: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
@@ -99,6 +108,26 @@ class DependencyAuditBehaviorTest(unittest.TestCase):
             self.assertTrue(output_md.exists())
             self.assertIn("Global Pi Dependency Security Audit Report", output_md.read_text(encoding="utf-8"))
             self.assertIn(f"Wrote markdown report: {output_md}", result.stdout)
+
+    def test_git_repo_paths_expand_tilde_before_repo_check(self) -> None:
+        module = load_run_audit_module()
+        captured_paths: list[Path] = []
+
+        def fake_repo_update_info(repo_path: Path):
+            captured_paths.append(repo_path)
+            return None
+
+        original = module.repo_update_info
+        module.repo_update_info = fake_repo_update_info
+        try:
+            results = module.audit_git_repos(Path(tempfile.gettempdir()), ["~/.pi/agent/git/github.com/testzugang/pi-plugins"], 24.0)
+        finally:
+            module.repo_update_info = original
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["status"], "missing_or_not_git")
+        self.assertTrue(captured_paths)
+        self.assertEqual(captured_paths[0], Path("~/.pi/agent/git/github.com/testzugang/pi-plugins").expanduser())
 
 
 if __name__ == "__main__":
