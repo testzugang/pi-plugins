@@ -125,13 +125,13 @@ If a hook fails:
 
 ## Common Mistakes
 
-| Mistake                                     | Correction                                                                       |
-| ------------------------------------------- | -------------------------------------------------------------------------------- |
-| Committing without reading the staged diff. | Always inspect staged changes first.                                             |
-| Staging all files silently.                 | Ask once before staging; recent assistant work plus a commit request implies staging intent, but not staging consent. |
-| Warning after active work that nothing is staged. | Treat the commit request as implicit staging intent, show all candidate files, and ask once before staging. |
-| Drafting from stale staged diff after staging. | Rerun staged status/stat/diff after staging and before writing the message. |
-| Asking the same confirmation twice.         | Use one staging confirmation (only if needed) and one final commit confirmation. |
-| Writing a message with no “why.”            | Ask for motivation and include it in the body.                                   |
-| Choosing a gitmoji silently when ambiguous. | Offer likely options with `user_select`.                                         |
-| Using `--no-verify` by default.             | Only use it when explicitly requested.                                           |
+| Mistake                                           | Correction                                                                                                            |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Committing without reading the staged diff.       | Always inspect staged changes first.                                                                                  |
+| Staging all files silently.                       | Ask once before staging; recent assistant work plus a commit request implies staging intent, but not staging consent. |
+| Warning after active work that nothing is staged. | Treat the commit request as implicit staging intent, show all candidate files, and ask once before staging.           |
+| Drafting from stale staged diff after staging.    | Rerun staged status/stat/diff after staging and before writing the message.                                           |
+| Asking the same confirmation twice.               | Use one staging confirmation (only if needed) and one final commit confirmation.                                      |
+| Writing a message with no “why.”                  | Ask for motivation and include it in the body.                                                                        |
+| Choosing a gitmoji silently when ambiguous.       | Offer likely options with `user_select`.                                                                              |
+| Using `--no-verify` by default.                   | Only use it when explicitly requested.                                                                                |

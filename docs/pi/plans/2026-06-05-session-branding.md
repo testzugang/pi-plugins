@@ -13,6 +13,7 @@
 ## 1. File Structure & Scope Check
 
 We will create, register, and document three files in the monorepo workspace:
+
 1. `extensions/session-branding/index.ts` - Main extension entry point.
 2. `tests/session-branding/session-branding.spec.ts` - Complete Jest test suite covering all states, configs, validations, parallel counters, malformed files, sound writes, and UI wrapping.
 3. `README.md` - Workspace document update with full user-facing instructions.
@@ -28,6 +29,7 @@ No changes to existing extension packages or configuration files are required.
 Set up folders for the extension and test files.
 
 **Files:**
+
 - Create: `extensions/session-branding/`
 - Create: `tests/session-branding/`
 
@@ -42,6 +44,7 @@ Run: `mkdir -p extensions/session-branding tests/session-branding`
 We will write a fully featured TDD-compliant Jest test suite verifying configuration roundtrips, malformed config fallbacks, state hierarchy (and parallel counters), sound execution, invalid inputs, and `hasUI` safety.
 
 **Files:**
+
 - Create: `tests/session-branding/session-branding.spec.ts`
 
 - [ ] **Step 1: Write the complete test suite**
@@ -49,19 +52,40 @@ We will write a fully featured TDD-compliant Jest test suite verifying configura
 Write the tests using the virtual mock patterns and precise unit assertions with `toHaveBeenLastCalledWith` to verify state ordering.
 
 ```typescript
-import { describe, expect, it, jest, beforeEach, afterEach } from "@jest/globals";
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  describe,
+  expect,
+  it,
+  jest,
+  beforeEach,
+  afterEach,
+} from "@jest/globals";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 // Virtual mocks for pi packages
 jest.mock("@earendil-works/pi-coding-agent", () => ({}), { virtual: true });
-jest.mock("@earendil-works/pi-tui", () => {
-  class Text {
-    constructor(public content: string, public x: number, public y: number) {}
-  }
-  return { Text };
-}, { virtual: true });
+jest.mock(
+  "@earendil-works/pi-tui",
+  () => {
+    class Text {
+      constructor(
+        public content: string,
+        public x: number,
+        public y: number,
+      ) {}
+    }
+    return { Text };
+  },
+  { virtual: true },
+);
 
 type CommandOpts = {
   description: string;
@@ -147,7 +171,7 @@ describe("session-branding extension", () => {
       getSessionName: jest.fn(() => "Test Session"),
     };
     const fakePi = makeFakePi(recorded);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const extension = require("../../extensions/session-branding").default;
     extension(fakePi);
@@ -176,7 +200,7 @@ describe("session-branding extension", () => {
       getSessionName: jest.fn(() => "Test Session"),
     };
     const fakePi = makeFakePi(recorded);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const extension = require("../../extensions/session-branding").default;
     extension(fakePi);
@@ -186,7 +210,9 @@ describe("session-branding extension", () => {
 
     // Initial load when file is missing should default to blue
     await startHandler({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("🔵 Test Session"),
+    );
 
     // Set color via command
     const colorCmd = recorded.commands.get("session-color")!;
@@ -213,7 +239,9 @@ describe("session-branding extension", () => {
     const freshCtx = makeFakeCtx(tempCwd);
 
     await freshStart({}, freshCtx);
-    expect(freshCtx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("🔴 Test Session"));
+    expect(freshCtx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("🔴 Test Session"),
+    );
   });
 
   it("retains defaults when branding.json is malformed", async () => {
@@ -224,7 +252,7 @@ describe("session-branding extension", () => {
       getSessionName: jest.fn(() => "Test Session"),
     };
     const fakePi = makeFakePi(recorded);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const extension = require("../../extensions/session-branding").default;
     extension(fakePi);
@@ -237,7 +265,9 @@ describe("session-branding extension", () => {
     const { ctx } = makeFakeCtx(tempCwd);
 
     await startHandler({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("🔵 Test Session"),
+    );
   });
 
   it("supports color selection via UI select", async () => {
@@ -248,7 +278,7 @@ describe("session-branding extension", () => {
       getSessionName: jest.fn(() => "Test Session"),
     };
     const fakePi = makeFakePi(recorded);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const extension = require("../../extensions/session-branding").default;
     extension(fakePi);
@@ -259,8 +289,13 @@ describe("session-branding extension", () => {
     const colorCmd = recorded.commands.get("session-color")!;
     await colorCmd.handler("", ctx);
 
-    expect(select).toHaveBeenCalledWith("Wähle eine Repository-Farbe:", expect.any(Array));
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("🟢 Test Session"));
+    expect(select).toHaveBeenCalledWith(
+      "Wähle eine Repository-Farbe:",
+      expect.any(Array),
+    );
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("🟢 Test Session"),
+    );
   });
 
   it("handles status-emoji hierarchy on events and UI blocks", async () => {
@@ -271,7 +306,7 @@ describe("session-branding extension", () => {
       getSessionName: jest.fn(() => "Test Session"),
     };
     const fakePi = makeFakePi(recorded);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const extension = require("../../extensions/session-branding").default;
     extension(fakePi);
@@ -286,31 +321,45 @@ describe("session-branding extension", () => {
 
     // 1. Idle
     await start({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("💤 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("💤 🔵 Test Session"),
+    );
 
     // 2. Thinking
     await agentStart({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("⏳ 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("⏳ 🔵 Test Session"),
+    );
 
     // 3. Executing Tool
     await toolStart({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("⚙️ 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("⚙️ 🔵 Test Session"),
+    );
 
     // 4. Blocked (Simulate confirm dialog)
     const blockPromise = ctx.ui.confirm("Check");
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("⚠️ 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("⚠️ 🔵 Test Session"),
+    );
     await blockPromise;
 
     // After resolution, goes back to ⚙️ Executing
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("⚙️ 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("⚙️ 🔵 Test Session"),
+    );
 
     // 5. Back to thinking
     await toolEnd({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("⏳ 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("⏳ 🔵 Test Session"),
+    );
 
     // 6. Back to idle
     await agentEnd({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("💤 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("💤 🔵 Test Session"),
+    );
   });
 
   it("correctly handles parallel tool execution state counts", async () => {
@@ -321,7 +370,7 @@ describe("session-branding extension", () => {
       getSessionName: jest.fn(() => "Test Session"),
     };
     const fakePi = makeFakePi(recorded);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const extension = require("../../extensions/session-branding").default;
     extension(fakePi);
@@ -333,20 +382,28 @@ describe("session-branding extension", () => {
     const toolEnd = recorded.events.get("tool_execution_end")![0];
 
     await start({}, ctx);
-    
+
     // 2 parallel tools start
     await toolStart({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("⚙️ 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("⚙️ 🔵 Test Session"),
+    );
     await toolStart({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("⚙️ 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("⚙️ 🔵 Test Session"),
+    );
 
     // 1 parallel tool ends -> should remain in Executing (⚙️)
     await toolEnd({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("⚙️ 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("⚙️ 🔵 Test Session"),
+    );
 
     // Last tool ends -> back to idle
     await toolEnd({}, ctx);
-    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(expect.stringContaining("💤 🔵 Test Session"));
+    expect(ctx.ui.setTitle).toHaveBeenLastCalledWith(
+      expect.stringContaining("💤 🔵 Test Session"),
+    );
   });
 
   it("triggers bell sound write on UI block", async () => {
@@ -357,7 +414,7 @@ describe("session-branding extension", () => {
       getSessionName: jest.fn(() => "Test Session"),
     };
     const fakePi = makeFakePi(recorded);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const extension = require("../../extensions/session-branding").default;
     extension(fakePi);
@@ -367,7 +424,9 @@ describe("session-branding extension", () => {
 
     await start({}, ctx);
 
-    const writeSpy = jest.spyOn(process.stdout, "write").mockImplementation((() => true) as any);
+    const writeSpy = jest
+      .spyOn(process.stdout, "write")
+      .mockImplementation((() => true) as any);
 
     await ctx.ui.confirm("Check Block Sound");
 
@@ -383,7 +442,7 @@ describe("session-branding extension", () => {
       getSessionName: jest.fn(() => "Test Session"),
     };
     const fakePi = makeFakePi(recorded);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const extension = require("../../extensions/session-branding").default;
     extension(fakePi);
@@ -393,7 +452,10 @@ describe("session-branding extension", () => {
 
     await colorCmd.handler("magenta", ctx);
 
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining("Ungültige Farbe"), "error");
+    expect(notify).toHaveBeenCalledWith(
+      expect.stringContaining("Ungültige Farbe"),
+      "error",
+    );
     expect(existsSync(join(tempCwd, ".pi", "branding.json"))).toBe(false);
   });
 });
@@ -401,7 +463,7 @@ describe("session-branding extension", () => {
 
 - [ ] **Step 2: Run test suite to verify it fails (since index.ts is missing)**
 
-*(This serves as our formal TDD verification step).*
+_(This serves as our formal TDD verification step)._
 
 ---
 
@@ -410,6 +472,7 @@ describe("session-branding extension", () => {
 We will write the complete extension code inside `extensions/session-branding/index.ts`. All mutable state, loaded configuration, and trackers are held inside the closure of the factory export. We wrap `ctx.ui` instance methods directly instead of mutating the prototype to prevent side effects and simplify execution.
 
 **Files:**
+
 - Create: `extensions/session-branding/index.ts`
 
 - [ ] **Step 1: Write complete extension code**
@@ -437,7 +500,10 @@ const COLOR_MAP: Record<string, string> = {
   white: "⚪",
 };
 
-const COLOR_TO_THEME_KEY: Record<string, "error" | "warning" | "success" | "accent" | "toolTitle" | "muted" | "dim"> = {
+const COLOR_TO_THEME_KEY: Record<
+  string,
+  "error" | "warning" | "success" | "accent" | "toolTitle" | "muted" | "dim"
+> = {
   red: "error",
   orange: "warning",
   yellow: "warning",
@@ -517,7 +583,9 @@ export default function (pi: ExtensionAPI) {
     const configPath = join(cwd, ".pi", "branding.json");
     if (existsSync(configPath)) {
       try {
-        const config = JSON.parse(readFileSync(configPath, "utf8")) as BrandingConfig;
+        const config = JSON.parse(
+          readFileSync(configPath, "utf8"),
+        ) as BrandingConfig;
         if (config && typeof config === "object") {
           currentBranding.color =
             typeof config.color === "string" && COLOR_MAP[config.color]
@@ -556,7 +624,13 @@ export default function (pi: ExtensionAPI) {
     const uiObj = ctx.ui as any;
     if (uiObj.__patched_branding) return;
 
-    const methodsToWrap = ["confirm", "select", "input", "editor", "custom"] as const;
+    const methodsToWrap = [
+      "confirm",
+      "select",
+      "input",
+      "editor",
+      "custom",
+    ] as const;
 
     for (const method of methodsToWrap) {
       const original = uiObj[method];
@@ -694,6 +768,7 @@ export default function (pi: ExtensionAPI) {
 Run package validation, formatting checkers, and local test runners.
 
 **Files:**
+
 - Modify: (None)
 
 - [ ] **Step 1: Run validation script**
@@ -718,15 +793,17 @@ Expected: All tests pass.
 We will update the user-facing `README.md` to document the new extension, its capabilities, commands, and options.
 
 **Files:**
+
 - Modify: `README.md`
 
 - [ ] **Step 1: Edit README.md**
 
 Add `session-branding` documentation sections:
+
 1. In "Current resources" under `Extensions`.
 2. In "Feature quick start" under a dedicated section `session-branding`.
 
-```markdown
+````markdown
 ### [`session-branding`](extensions/session-branding)
 
 Visual and acoustic session identification for background and backgrounded tabs.
@@ -738,6 +815,7 @@ Install the package, then use the branding commands inside any session:
 /session-color
 /session-color blue
 ```
+````
 
 #### Capabilities
 
@@ -758,6 +836,7 @@ To configure a custom sound command, add it directly to `.pi/branding.json` in y
   "soundCommand": "afplay /System/Library/Sounds/Glass.aiff"
 }
 ```
+
 ```
 
 ---
@@ -767,3 +846,4 @@ To configure a custom sound command, add it directly to `.pi/branding.json` in y
 - **Spec coverage**: Fully aligned. Directly maps all specs into implementation.
 - **Placeholder scan**: 100% complete and robust code templates. No "TODO" or "TBD".
 - **Type consistency**: Complete and standard TypeScript declarations.
+```
