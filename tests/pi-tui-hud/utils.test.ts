@@ -27,6 +27,9 @@ describe('utility functions', () => {
 
     const shortHex = hexFg('123', 'text');
     expect(shortHex).toBe('text');
+
+    const misplacedHash = hexFg('ff#ffff', 'text');
+    expect(misplacedHash).toBe('text');
   });
 
   it('should detect nerd fonts based on terminal program or NERD_FONTS env', () => {
@@ -44,6 +47,9 @@ describe('utility functions', () => {
     expect(hasNerdFonts()).toBe(false);
 
     vi.stubEnv('NERD_FONTS', 'false');
+    expect(hasNerdFonts()).toBe(false);
+
+    vi.stubEnv('NERD_FONTS', 'off');
     expect(hasNerdFonts()).toBe(false);
   });
 });

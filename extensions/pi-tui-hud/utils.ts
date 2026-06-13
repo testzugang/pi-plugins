@@ -11,7 +11,7 @@ export function withIcon(icon: string, text: string): string {
 }
 
 export function hexFg(hex: string, text: string): string {
-  const cleanHex = hex.replace('#', '');
+  const cleanHex = hex.startsWith('#') ? hex.slice(1) : hex;
   if (!/^[0-9a-fA-F]{6}$/.test(cleanHex)) {
     return text;
   }
