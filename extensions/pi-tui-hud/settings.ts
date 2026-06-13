@@ -81,10 +81,10 @@ export function readSettings(cwd: string): HudSettings {
   };
 }
 
-export function writeSetting(
+export function writeSetting<K extends keyof HudSettings>(
   cwd: string,
-  key: keyof HudSettings,
-  value: HudSettings[keyof HudSettings],
+  key: K,
+  value: HudSettings[K],
 ): void {
   if (!isValidSettingValue(key, value)) {
     throw new TypeError(`Invalid HUD setting value for ${String(key)}`);

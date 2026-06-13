@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import { join } from 'node:path';
 import { readSettings, writeSetting, DEFAULT_SETTINGS } from '../../extensions/pi-tui-hud/settings';
@@ -17,6 +17,10 @@ describe('settings management', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should return default settings if files do not exist', () => {
