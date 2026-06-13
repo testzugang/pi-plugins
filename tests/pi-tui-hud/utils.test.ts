@@ -1,14 +1,49 @@
-import { describe, it, expect } from 'vitest';
-import { withIcon, hexFg } from '../../extensions/pi-tui-hud/utils';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { withIcon, hexFg, hasNerdFonts } from '../../extensions/pi-tui-hud/utils';
 
 describe('utility functions', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('should format text with icons correctly', () => {
     const result = withIcon('🚀', 'Launch');
     expect(result).toBe('🚀 Launch');
   });
 
+  it('should fallback gracefully if icon is empty', () => {
+    const result = withIcon('', 'Launch');
+    expect(result).toBe('Launch');
+  });
+
   it('should wrap text in raw hex foreground escape codes', () => {
     const colored = hexFg('#ffffff', 'text');
     expect(colored).toBe('\x1b[38;2;255;255;255mtext\x1b[39m');
+  });
+
+  it('should fallback to plain text if hex is invalid', () => {
+    const badHex = hexFg('invalid', 'text');
+    expect(badHex).toBe('text');
+
+    const shortHex = hexFg('123', 'text');
+    expect(shortHex).toBe('text');
+  });
+
+  it('should detect nerd fonts based on terminal program or NERD_FONTS env', () => {
+    vi.stubEnv('TERM_PROGRAM', 'iTerm.app');
+    expect(hasNerdFonts()).toBe(true);
+
+    vi.stubEnv('TERM_PROGRAM', 'Apple_Terminal');
+    expect(hasNerdFonts()).toBe(true);
+
+    vi.stubEnv('TERM_PROGRAM', 'other');
+    vi.stubEnv('NERD_FONTS', '1');
+    expect(hasNerdFonts()).toBe(true);
+
+    vi.stubEnv('NERD_FONTS', '0');
+    expect(hasNerdFonts()).toBe(false);
+
+    vi.stubEnv('NERD_FONTS', 'false');
+    expect(hasNerdFonts()).toBe(false);
   });
 });
