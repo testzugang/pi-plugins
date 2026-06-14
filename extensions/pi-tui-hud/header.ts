@@ -3,7 +3,7 @@ import { truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
 import { readSettings } from './settings';
 
 function parseHex(hex: string): { r: number; g: number; b: number } | null {
-  const clean = hex.replace('#', '');
+  const clean = hex.startsWith('#') ? hex.slice(1) : hex;
   if (!/^[0-9a-fA-F]{6}$/.test(clean)) return null;
   return {
     r: parseInt(clean.substring(0, 2), 16),

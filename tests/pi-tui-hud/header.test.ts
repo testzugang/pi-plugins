@@ -59,6 +59,9 @@ describe('gradient logo header', () => {
     const text = '👩‍👩‍👧‍👦'; // Family emoji with multiple ZWJ joins
     const gradient = getGradientText(text, '#ff0000', '#0000ff');
     expect(stripAnsi(gradient)).toBe('👩‍👩‍👧‍👦');
+    
+    // Core check: Verify the entire multi-code-point emoji was not split by ANSI escape codes inside
+    expect(gradient).toContain(text);
   });
 
   it('should render colored gradient bar and verify mathematical centering', () => {
