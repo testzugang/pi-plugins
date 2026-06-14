@@ -11,7 +11,7 @@ function isSafeSgr(paramsStr: string): boolean {
 
   for (let i = 0; i < params.length; i++) {
     const p = params[i];
-    if (isNaN(p)) continue;
+    if (isNaN(p)) return false;
 
     if ([0, 1, 2, 22, 4, 24, 39, 49].includes(p)) continue;
     if (p >= 30 && p <= 37) continue;
@@ -21,12 +21,20 @@ function isSafeSgr(paramsStr: string): boolean {
 
     if ((p === 38 || p === 48) && i + 1 < params.length) {
       const mode = params[i + 1];
-      if (mode === 5) {
-        i += 2;
-        continue;
-      } else if (mode === 2) {
-        i += 4;
-        continue;
+      if (mode === 5 && i + 2 < params.length) {
+        const color = params[i + 2];
+        if (color >= 0 && color <= 255) {
+          i += 2;
+          continue;
+        }
+      } else if (mode === 2 && i + 4 < params.length) {
+        const r = params[i + 2];
+        const g = params[i + 3];
+        const b = params[i + 4];
+        if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+          i += 4;
+          continue;
+        }
       }
     }
 
@@ -48,8 +56,8 @@ function sanitizeStatusText(text: string): string {
     return '';
   });
 
-  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[?1049h or \x1b[>0c)
-  clean = clean.replace(/\x1b\[[?<=>]?[\d;]*[!"#$%&'()*+,\-./]*[a-zA-Z~]/g, '');
+  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[?1049h or \x1b[38:2::255m) including colon-separated CSI
+  clean = clean.replace(/\x1b\[[?<=>]?[\d;:]*[!"#$%&'()*+,\-./]*[a-zA-Z~]/g, '');
 
   // 3. Strip OSC sequences safely even if incomplete (stops at next \x1b or end of string if no BEL/ST)
   clean = clean.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?/g, '');
@@ -57,9 +65,9 @@ function sanitizeStatusText(text: string): string {
   // 4. Strip all other ESC sequences (DCS, SS2, SS3, charsets, etc.)
   clean = clean.replace(/\x1b[\x20-\x2f]*[\x30-\x7e]/g, '');
 
-  // 5. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f)
+  // 5. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f) including tab (0x09)
   clean = clean.replace(/\x1b/g, ' ');
-  clean = clean.replace(/[\x00-\x08\x0a-\x1a\x1c-\x1f\x7f]/g, ' ');
+  clean = clean.replace(/[\x00-\x09\x0a-\x1a\x1c-\x1f\x7f]/g, ' ');
 
   // 6. Restore masked safe SGR color codes
   const restoreRegex = new RegExp(`${tokenPrefix}(\\d+)__`, 'g');
