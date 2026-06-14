@@ -9,6 +9,18 @@ let breadcrumbMode = 'inner';
 let liveCtx: ExtensionContext | null = null;
 let liveEditorTui: any = null;
 
+function isExtensionContext(val: unknown): val is ExtensionContext {
+  return (
+    typeof val === 'object' &&
+    val !== null &&
+    'cwd' in val &&
+    'ui' in val &&
+    typeof (val as any).ui === 'object' &&
+    (val as any).ui !== null &&
+    'theme' in (val as any).ui
+  );
+}
+
 export class HudCustomEditor extends CustomEditor {
   render(width: number): string[] {
     const lines = super.render(width);
@@ -108,7 +120,7 @@ export function registerEditor(pi: ExtensionAPI) {
     }
 
     unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
-      if (!changeCtx || typeof changeCtx !== 'object' || !('cwd' in changeCtx)) return;
+      if (!isExtensionContext(changeCtx)) return;
       
       const updatedSettings = readSettings(changeCtx.cwd);
       if (updatedSettings.enabled && !editorEnabled) {
@@ -120,12 +132,13 @@ export function registerEditor(pi: ExtensionAPI) {
         breadcrumbMode = updatedSettings.breadcrumb;
         
         if (updatedSettings.breadcrumb === 'inner') {
-          ctx.ui.setEditorComponent((tui: any, theme: any, keybindings: any) => {
+          changeCtx.ui.setEditorComponent((tui: any, theme: any, keybindings: any) => {
             liveEditorTui = tui;
             return new HudCustomEditor(tui, theme, keybindings);
           });
         } else {
-          ctx.ui.setEditorComponent(undefined);
+          changeCtx.ui.setEditorComponent(undefined);
+          liveEditorTui = null;
         }
         
         updateTopWidget(changeCtx);

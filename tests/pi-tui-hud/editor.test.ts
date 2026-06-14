@@ -99,6 +99,42 @@ describe('editor registration and lifecycle', () => {
     expect(mockCtx.ui.setWidget).toHaveBeenCalledWith('hud-breadcrumb-widget', expect.any(Function), { placement: 'aboveEditor' });
   });
 
+  it('should do nothing on hud_settings_changed if payload is invalid', () => {
+    vi.mocked(readSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    registerEditor(mockPi);
+    eventHandlers['session_start']({}, mockCtx);
+
+    // Call setting changed with invalid context (no .ui)
+    const badCtx = { cwd: '/mock/cwd' };
+    busHandlers['hud_settings_changed'](badCtx);
+
+    // The handler should safely return early and not mutate or crash
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledTimes(1); // Only from session_start
+  });
+
+  it('should remove editor component and top widget when breadcrumb is hide', () => {
+    vi.mocked(readSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'hide',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    registerEditor(mockPi);
+    eventHandlers['session_start']({}, mockCtx);
+
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
+    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith('hud-breadcrumb-widget', undefined);
+  });
+
   it('should clean up completely and call unsubscribe on shutdown', () => {
     vi.mocked(readSettings).mockReturnValue({
       enabled: true,
@@ -113,7 +149,33 @@ describe('editor registration and lifecycle', () => {
     eventHandlers['session_shutdown']({}, mockCtx);
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenLastCalledWith(undefined);
+    expect(mockCtx.ui.setWidget).toHaveBeenLastCalledWith('hud-breadcrumb-widget', undefined);
     expect(unsubMock).toHaveBeenCalled();
+  });
+
+  it('should update state and request render on model_select', () => {
+    vi.mocked(readSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    const mockTui = { requestRender: vi.fn() };
+    mockCtx.ui.setEditorComponent.mockImplementation((factory: any) => {
+      if (factory) {
+        factory(mockTui, mockCtx.ui.theme, {});
+      }
+    });
+
+    registerEditor(mockPi);
+    eventHandlers['session_start']({}, mockCtx);
+
+    // Trigger model select
+    eventHandlers['model_select']({}, mockCtx);
+
+    expect(mockTui.requestRender).toHaveBeenCalled();
   });
 
   it('should dynamically enable or disable on settings changed event', () => {
@@ -142,5 +204,17 @@ describe('editor registration and lifecycle', () => {
     busHandlers['hud_settings_changed'](mockCtx);
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenLastCalledWith(expect.any(Function));
+
+    // Simulate settings changing back to disabled
+    vi.mocked(readSettings).mockReturnValue({
+      enabled: false,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    busHandlers['hud_settings_changed'](mockCtx);
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenLastCalledWith(undefined);
   });
 });
