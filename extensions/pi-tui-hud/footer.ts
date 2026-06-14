@@ -107,6 +107,10 @@ export function registerFooter(pi: ExtensionAPI) {
             statsLine = `${truncatedLeft}${' '.repeat(padSize)}${rightSegment}`;
           }
 
+          if (visibleWidth(statsLine) > width) {
+            statsLine = truncateToWidth(statsLine, width, '');
+          }
+
           const lines = [statsLine];
 
           // Line 2: Extension statuses

@@ -177,6 +177,11 @@ describe('footer registration and rendering', () => {
     mockCtx.getContextUsage.mockReturnValue(null);
     const lines = renderer.render(80);
     expect(lines[0]).toContain('?%/200k');
+
+    // Case 2: Compacted / null values inside contextUsage
+    mockCtx.getContextUsage.mockReturnValue({ tokens: null, percent: null, contextWindow: 200000 });
+    const linesCompacted = renderer.render(80);
+    expect(linesCompacted[0]).toContain('?%/200k');
   });
 
   it('should sort and sanitize extension statuses cleanly', () => {
@@ -249,5 +254,10 @@ describe('footer registration and rendering', () => {
     expect(visibleWidth(lines[0])).toBe(30);
     expect(lines[0]).toContain('⚡ med'); // Right segment is preserved
     expect(lines[0]).toContain('...'); // Left segment is truncated
+
+    // Test extreme narrowness: width 3 (rightSegment is "⚡ med" which is 5 columns)
+    // The output MUST be strictly truncated to exactly 3 columns.
+    const extremeLines = renderer.render(3);
+    expect(visibleWidth(extremeLines[0])).toBe(3);
   });
 });
