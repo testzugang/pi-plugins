@@ -213,10 +213,10 @@ describe('footer registration and rendering', () => {
     const mockFooterData = {
       getGitBranch: () => '',
       onBranchChange: () => vi.fn(),
-      // Unsorted map with dangerous control characters and OSC/CSI escapes
+      // Unsorted map with dangerous control characters, unclosed ESCs, and CSI/OSC exploits
       getExtensionStatuses: () => new Map([
-        ['z-ext', 'Z-Status\x07with\x08control\rchars'],
-        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b]8;;http://bad.com\x07OSCs'],
+        ['z-ext', 'Z-Status\x07with\x08control\rchars and unclosed \x1b ESC'],
+        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b[200~private \x1b]2;incompleteOSC'],
       ]),
     };
 
@@ -224,10 +224,12 @@ describe('footer registration and rendering', () => {
     const lines = renderer.render(80);
 
     // Line 2 should be sorted alphabetically:
-    // a-ext first: SGR color code \x1b[31m and \x1b[39m are preserved, CSI (\x1b[2J) and OSC are stripped.
-    // z-ext next: \x07 (BEL), \x08 (BS), and \r are replaced with spaces or sanitized.
-    expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs OSCs');
-    expect(lines[1]).toContain('Z-Status with control chars');
+    // a-ext first: SGR color code \x1b[31m and \x1b[39m are preserved, CSI (\x1b[2J, \x1b[200~) and OSC are stripped.
+    // z-ext next: \x07 (BEL), \x08 (BS), and raw \x1b are replaced with spaces or sanitized.
+    expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs private');
+    expect(lines[1]).toContain('Z-Status with control chars and unclosed ESC');
+    // Verify style reset is appended to prevent leaks
+    expect(lines[1].endsWith('\x1b[0m')).toBe(true);
   });
 
   it('should handle narrow terminal widths safely without overflowing maximum width', () => {
@@ -324,6 +326,10 @@ describe('footer registration and rendering', () => {
     messageUpdateHandler({ message: mockMessage });
     expect(mockTui.requestRender).toHaveBeenCalledTimes(2);
 
+    // Trigger partial message_update (no message/usage) - should not crash
+    expect(() => messageUpdateHandler({})).not.toThrow();
+    expect(() => messageUpdateHandler(null)).not.toThrow();
+
     // Mock getContextUsage to null so it falls back to cumulative + live calculations
     mockCtx.getContextUsage.mockReturnValue(null);
 
@@ -338,5 +344,8 @@ describe('footer registration and rendering', () => {
     // Trigger message_end
     messageEndHandler();
     expect(mockTui.requestRender).toHaveBeenCalledTimes(3);
+
+    // Trigger dispose and verify safe cleanup
+    renderer.dispose();
   });
 });

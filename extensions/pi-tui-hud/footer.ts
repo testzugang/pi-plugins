@@ -4,21 +4,30 @@ import { withIcon } from './utils';
 import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
 
 function sanitizeStatusText(text: string): string {
-  // 1. Keep SGR color codes (\x1b\[[\d;]*m), but strip other CSI escape sequences
-  let clean = text.replace(/\x1b\[([\d;?]*)([a-zA-Z])/g, (match, p1, p2) => {
-    if (p2 === 'm') {
-      return match;
-    }
-    return '';
+  const sgrCodes: string[] = [];
+  
+  // 1. Extract and mask only safe SGR color codes (\x1b[[0-9;]*m)
+  let clean = text.replace(/\x1b\[[0-9;]*m/g, (match) => {
+    sgrCodes.push(match);
+    return `__HUD_SGR_${sgrCodes.length - 1}__`;
   });
 
-  // 2. Strip OSC escape sequences (e.g. \x1b]8;;url\x07)
-  clean = clean.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '');
+  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[200~)
+  clean = clean.replace(/\x1b\[[\d;?]*[a-zA-Z~]/g, '');
 
-  // 3. Strip all other raw control characters (0x00-0x1f except ESC 0x1b, delete 0x7f)
+  // 3. Strip OSC sequences (like \x1b]2;incomplete or \x1b]8;;url\x07)
+  clean = clean.replace(/\x1b\][^\s\x07\x1b]*/g, '');
+
+  // 4. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f)
+  clean = clean.replace(/\x1b/g, ' ');
   clean = clean.replace(/[\x00-\x08\x0a-\x1a\x1c-\x1f\x7f]/g, ' ');
 
-  // 4. Normalize whitespace
+  // 5. Restore masked safe SGR color codes
+  clean = clean.replace(/__HUD_SGR_(\d+)__/g, (_, idx) => {
+    return sgrCodes[parseInt(idx, 10)] || '';
+  });
+
+  // 6. Normalize whitespace
   return clean.replace(/ +/g, ' ').trim();
 }
 
@@ -132,13 +141,15 @@ export function registerFooter(pi: ExtensionAPI) {
               .sort(([a], [b]) => a.localeCompare(b))
               .map(([, text]) => sanitizeStatusText(text));
             const statusLine = sorted.join('  ');
-            lines.push(truncateToWidth(statusLine, width, theme.fg('dim', '...')));
+            lines.push(truncateToWidth(statusLine, width, theme.fg('dim', '...')) + '\x1b[0m');
           }
 
           return lines;
         },
         dispose() {
-          liveTui = null;
+          if (liveTui === tui) {
+            liveTui = null;
+          }
           unsubBranch();
         }
       };
@@ -152,7 +163,7 @@ export function registerFooter(pi: ExtensionAPI) {
   });
   
   pi.on('message_update', (event) => { 
-    if (isStreaming) {
+    if (isStreaming && event?.message?.usage) {
       liveUsage = event.message.usage; 
       liveTui?.requestRender();
     }
