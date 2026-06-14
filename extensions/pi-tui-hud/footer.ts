@@ -3,31 +3,71 @@ import { readSettings } from './settings';
 import { withIcon } from './utils';
 import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
 
+function isSafeSgr(paramsStr: string): boolean {
+  const params = paramsStr.split(';').map((p) => parseInt(p, 10));
+  if (params.length === 0 || (params.length === 1 && isNaN(params[0]))) {
+    return true;
+  }
+
+  for (let i = 0; i < params.length; i++) {
+    const p = params[i];
+    if (isNaN(p)) continue;
+
+    if ([0, 1, 2, 22, 4, 24, 39, 49].includes(p)) continue;
+    if (p >= 30 && p <= 37) continue;
+    if (p >= 40 && p <= 47) continue;
+    if (p >= 90 && p <= 97) continue;
+    if (p >= 100 && p <= 107) continue;
+
+    if ((p === 38 || p === 48) && i + 1 < params.length) {
+      const mode = params[i + 1];
+      if (mode === 5) {
+        i += 2;
+        continue;
+      } else if (mode === 2) {
+        i += 4;
+        continue;
+      }
+    }
+
+    return false;
+  }
+  return true;
+}
+
 function sanitizeStatusText(text: string): string {
   const sgrCodes: string[] = [];
+  const tokenPrefix = `__HUD_SGR_SAFE_COLOR_TOKEN_${Math.random().toString(36).slice(2)}__`;
   
-  // 1. Extract and mask only safe SGR color codes (\x1b[[0-9;]*m)
-  let clean = text.replace(/\x1b\[[0-9;]*m/g, (match) => {
-    sgrCodes.push(match);
-    return `__HUD_SGR_${sgrCodes.length - 1}__`;
+  // 1. Extract and mask ONLY approved SGR color codes, discard blink/hidden/other SGRs
+  let clean = text.replace(/\x1b\[([0-9;]*)m/g, (match, paramsStr) => {
+    if (isSafeSgr(paramsStr)) {
+      sgrCodes.push(match);
+      return `${tokenPrefix}${sgrCodes.length - 1}__`;
+    }
+    return '';
   });
 
-  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[200~)
-  clean = clean.replace(/\x1b\[[\d;?]*[a-zA-Z~]/g, '');
+  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[?1049h or \x1b[>0c)
+  clean = clean.replace(/\x1b\[[?<=>]?[\d;]*[!"#$%&'()*+,\-./]*[a-zA-Z~]/g, '');
 
-  // 3. Strip OSC sequences (like \x1b]2;incomplete or \x1b]8;;url\x07)
-  clean = clean.replace(/\x1b\][^\s\x07\x1b]*/g, '');
+  // 3. Strip OSC sequences safely even if incomplete (stops at next \x1b or end of string if no BEL/ST)
+  clean = clean.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?/g, '');
 
-  // 4. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f)
+  // 4. Strip all other ESC sequences (DCS, SS2, SS3, charsets, etc.)
+  clean = clean.replace(/\x1b[\x20-\x2f]*[\x30-\x7e]/g, '');
+
+  // 5. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f)
   clean = clean.replace(/\x1b/g, ' ');
   clean = clean.replace(/[\x00-\x08\x0a-\x1a\x1c-\x1f\x7f]/g, ' ');
 
-  // 5. Restore masked safe SGR color codes
-  clean = clean.replace(/__HUD_SGR_(\d+)__/g, (_, idx) => {
+  // 6. Restore masked safe SGR color codes
+  const restoreRegex = new RegExp(`${tokenPrefix}(\\d+)__`, 'g');
+  clean = clean.replace(restoreRegex, (_, idx) => {
     return sgrCodes[parseInt(idx, 10)] || '';
   });
 
-  // 6. Normalize whitespace
+  // 7. Normalize whitespace
   return clean.replace(/ +/g, ' ').trim();
 }
 
