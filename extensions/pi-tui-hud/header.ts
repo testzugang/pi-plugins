@@ -3,7 +3,8 @@ import { readSettings } from './settings';
 import { hexFg } from './utils';
 
 export function generateGradientHeader(logoText: string, width: number): string {
-  const paddingSize = Math.max(0, Math.floor((width - logoText.length) / 2));
+  const fullLength = logoText.length + 4; // Includes '⚡ ' (2) and ' ⚡' (2)
+  const paddingSize = Math.max(0, Math.floor((width - fullLength) / 2));
   const padding = ' '.repeat(paddingSize);
 
   // Custom secure gradient bar: Blue -> Cyan -> Purple
