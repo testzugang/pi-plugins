@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
-import { truncateToWidth } from '@earendil-works/pi-tui';
+import { truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
 import { readSettings } from './settings';
 
 function parseHex(hex: string): { r: number; g: number; b: number } | null {
@@ -31,7 +31,8 @@ export function getGradientText(text: string, startHex: string, endHex: string):
 }
 
 export function generateGradientHeader(logoText: string, width: number): string {
-  const fullLength = logoText.length + 4; // Includes '⚡ ' (2) and ' ⚡' (2)
+  const logoLen = visibleWidth(logoText);
+  const fullLength = logoLen + 4; // Includes '⚡ ' (2) and ' ⚡' (2)
   if (width < fullLength) {
     return truncateToWidth(logoText, width, '...');
   }
@@ -56,7 +57,8 @@ export function registerHeader(pi: ExtensionAPI) {
           }
           const infoLines: string[] = [generateGradientHeader('PI-TUI-HUD', width)];
           if (currentSettings['header-info']) {
-            infoLines.push(theme.fg('dim', ` Model: ${ctx.model?.id || 'unknown'} | CWD: ${ctx.cwd}`));
+            const rawInfo = ` Model: ${ctx.model?.id || 'unknown'} | CWD: ${ctx.cwd}`;
+            infoLines.push(truncateToWidth(theme.fg('dim', rawInfo), width, '...'));
           }
           return infoLines;
         },

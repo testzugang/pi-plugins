@@ -48,6 +48,12 @@ describe('gradient logo header', () => {
     expect(gradient).toContain('\x1b[38;2;0;0;255mB');
   });
 
+  it('should handle astral Unicode surrogate pairs safely without splitting', () => {
+    const text = '🌟✨'; // Two high-surrogate emojis
+    const gradient = getGradientText(text, '#ff0000', '#0000ff');
+    expect(stripAnsi(gradient)).toBe('🌟✨');
+  });
+
   it('should render colored gradient bar and verify mathematical centering', () => {
     const logoText = 'PI AGENT';
     const width = 80;
