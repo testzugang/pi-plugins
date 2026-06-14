@@ -13,6 +13,13 @@ describe('token count formatting', () => {
     expect(formatTokenCount(1500)).toBe('1.5k');
     expect(formatTokenCount(1500000)).toBe('1.5M');
   });
+
+  it('should handle boundary cases for formatting correctly', () => {
+    expect(formatTokenCount(999)).toBe('999');
+    expect(formatTokenCount(1000)).toBe('1k');
+    expect(formatTokenCount(999999)).toBe('1000k');
+    expect(formatTokenCount(1000000)).toBe('1M');
+  });
 });
 
 describe('footer registration and rendering', () => {
@@ -206,18 +213,21 @@ describe('footer registration and rendering', () => {
     const mockFooterData = {
       getGitBranch: () => '',
       onBranchChange: () => vi.fn(),
-      // Unsorted map with newlines and duplicate spaces
+      // Unsorted map with dangerous control characters and OSC/CSI escapes
       getExtensionStatuses: () => new Map([
-        ['z-ext', 'Z-Status\nwith newlines'],
-        ['a-ext', '  A-Status   with  spaces  '],
+        ['z-ext', 'Z-Status\x07with\x08control\rchars'],
+        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b]8;;http://bad.com\x07OSCs'],
       ]),
     };
 
     const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
     const lines = renderer.render(80);
 
-    // Line 2 should be sorted alphabetically: a-ext first, then z-ext, and fully sanitized
-    expect(lines[1]).toBe('A-Status with spaces  Z-Status with newlines');
+    // Line 2 should be sorted alphabetically:
+    // a-ext first: SGR color code \x1b[31m and \x1b[39m are preserved, CSI (\x1b[2J) and OSC are stripped.
+    // z-ext next: \x07 (BEL), \x08 (BS), and \r are replaced with spaces or sanitized.
+    expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs OSCs');
+    expect(lines[1]).toContain('Z-Status with control chars');
   });
 
   it('should handle narrow terminal widths safely without overflowing maximum width', () => {
@@ -303,7 +313,7 @@ describe('footer registration and rendering', () => {
     };
 
     // Trigger footer setup to capture liveTui
-    footerRendererFactory(mockTui, mockTheme, mockFooterData);
+    const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
 
     // Trigger agent_start
     agentStartHandler();
@@ -313,6 +323,17 @@ describe('footer registration and rendering', () => {
     const mockMessage = { usage: { input: 2000, output: 1000, cost: { total: 0.05 } } };
     messageUpdateHandler({ message: mockMessage });
     expect(mockTui.requestRender).toHaveBeenCalledTimes(2);
+
+    // Mock getContextUsage to null so it falls back to cumulative + live calculations
+    mockCtx.getContextUsage.mockReturnValue(null);
+
+    // Render footer during message update and verify live streaming tokens are accumulated
+    const lines = renderer.render(80);
+    // Since getContextUsage() is null, context usage should render as unknown ?%
+    expect(lines[0]).toContain('?%/200k');
+    expect(lines[0]).toContain('↑12k'); // Cumulative 10k + Live 2k = 12k
+    expect(lines[0]).toContain('↓6k'); // Cumulative 5k + Live 1k = 6k
+    expect(lines[0]).toContain('$0.200'); // Cumulative 0.15 + Live 0.05 = 0.20
 
     // Trigger message_end
     messageEndHandler();

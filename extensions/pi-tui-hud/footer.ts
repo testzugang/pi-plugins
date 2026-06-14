@@ -4,10 +4,22 @@ import { withIcon } from './utils';
 import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
 
 function sanitizeStatusText(text: string): string {
-  return text
-    .replace(/[\r\t\x00-\x06\x08-\x1a\x1c-\x1f]/g, ' ')
-    .replace(/ +/g, ' ')
-    .trim();
+  // 1. Keep SGR color codes (\x1b\[[\d;]*m), but strip other CSI escape sequences
+  let clean = text.replace(/\x1b\[([\d;?]*)([a-zA-Z])/g, (match, p1, p2) => {
+    if (p2 === 'm') {
+      return match;
+    }
+    return '';
+  });
+
+  // 2. Strip OSC escape sequences (e.g. \x1b]8;;url\x07)
+  clean = clean.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '');
+
+  // 3. Strip all other raw control characters (0x00-0x1f except ESC 0x1b, delete 0x7f)
+  clean = clean.replace(/[\x00-\x08\x0a-\x1a\x1c-\x1f\x7f]/g, ' ');
+
+  // 4. Normalize whitespace
+  return clean.replace(/ +/g, ' ').trim();
 }
 
 export function formatTokenCount(count: number): string {
