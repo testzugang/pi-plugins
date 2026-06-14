@@ -62,6 +62,13 @@ describe('gradient logo header', () => {
     expect(rendered.endsWith('⚡')).toBe(true);
   });
 
+  it('should handle narrow terminal widths gracefully by truncating the logo', () => {
+    const logoText = 'SUPERLONG_LOGO_TEXT';
+    const width = 10; // width is smaller than logoText + 4
+    const rendered = generateGradientHeader(logoText, width);
+    expect(stripAnsi(rendered)).toBe('SUPERLO...');
+  });
+
   it('should register and render reactive header lines', () => {
     vi.mocked(readSettings).mockReturnValue({
       enabled: true,

@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
+import { truncateToWidth } from '@earendil-works/pi-tui';
 import { readSettings } from './settings';
-import { hexFg } from './utils';
 
 function parseHex(hex: string): { r: number; g: number; b: number } | null {
   const clean = hex.replace('#', '');
@@ -18,19 +18,23 @@ export function getGradientText(text: string, startHex: string, endHex: string):
   if (!start || !end) return text;
 
   let result = '';
-  const steps = text.length;
+  const chars = Array.from(text);
+  const steps = chars.length;
   for (let i = 0; i < steps; i++) {
     const ratio = steps > 1 ? i / (steps - 1) : 0;
     const r = Math.round(start.r + ratio * (end.r - start.r));
     const g = Math.round(start.g + ratio * (end.g - start.g));
     const b = Math.round(start.b + ratio * (end.b - start.b));
-    result += `\x1b[38;2;${r};${g};${b}m${text[i]}\x1b[39m`;
+    result += `\x1b[38;2;${r};${g};${b}m${chars[i]}\x1b[39m`;
   }
   return result;
 }
 
 export function generateGradientHeader(logoText: string, width: number): string {
   const fullLength = logoText.length + 4; // Includes '⚡ ' (2) and ' ⚡' (2)
+  if (width < fullLength) {
+    return truncateToWidth(logoText, width, '...');
+  }
   const paddingSize = Math.max(0, Math.floor((width - fullLength) / 2));
   const padding = ' '.repeat(paddingSize);
 
@@ -41,8 +45,7 @@ export function generateGradientHeader(logoText: string, width: number): string 
 
 export function registerHeader(pi: ExtensionAPI) {
   pi.on('session_start', (_event, ctx) => {
-    const s = readSettings(ctx.cwd);
-    if (!s.enabled || !ctx.hasUI) return;
+    if (!ctx.hasUI) return;
 
     ctx.ui.setHeader((_tui, theme) => {
       return {
