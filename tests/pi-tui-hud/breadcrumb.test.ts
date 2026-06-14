@@ -7,5 +7,7 @@ describe('breadcrumb calculations', () => {
     const data = getBreadcrumbData(mockCtx as any);
     expect(data.folder).toBe('my-project');
     expect(data.modelName).toBe('claude-3-5');
+    expect(data.modelText).toContain('claude-3-5');
+    expect(data.folderText).toContain('my-project');
   });
 });

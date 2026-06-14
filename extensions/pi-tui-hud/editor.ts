@@ -11,8 +11,7 @@ let liveEditorTui: any = null;
 
 export class HudCustomEditor extends CustomEditor {
   render(width: number): string[] {
-    const contentWidth = Math.max(1, width - 2);
-    const lines = super.render(contentWidth);
+    const lines = super.render(width);
     if (lines.length < 3) return lines;
 
     const result = [...lines];
@@ -21,22 +20,24 @@ export class HudCustomEditor extends CustomEditor {
       const data = getBreadcrumbData(liveCtx);
       const infoPart = renderBreadcrumbInfo(data, currentTheme);
       const infoWidth = visibleWidth(infoPart);
-
-      let paddingLen = width - 3 - infoWidth;
+      
+      let paddingLen = width - 7 - infoWidth;
       let displayInfo = infoPart;
 
       if (paddingLen < 2) {
         const minDashes = 2;
-        const availForInfo = width - 3 - minDashes;
+        const availForInfo = width - 7 - minDashes;
         if (availForInfo > 0) {
           displayInfo = truncateToWidth(infoPart, availForInfo, '...');
-          paddingLen = width - 3 - visibleWidth(displayInfo);
+          paddingLen = width - 7 - visibleWidth(displayInfo);
         }
       }
 
       if (paddingLen >= 0) {
         const borderChar = currentTheme.fg('borderAccent', '─');
-        result[0] = borderChar + ' ' + displayInfo + ' ' + currentTheme.fg('borderAccent', '─'.repeat(paddingLen));
+        const leftCorner = currentTheme.fg('borderAccent', '┌');
+        const rightCorner = currentTheme.fg('borderAccent', '┐');
+        result[0] = leftCorner + borderChar + '┤ ' + displayInfo + ' ├' + borderChar.repeat(paddingLen) + rightCorner;
       }
     }
 
