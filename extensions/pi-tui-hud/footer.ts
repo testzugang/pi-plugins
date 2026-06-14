@@ -56,8 +56,9 @@ function sanitizeStatusText(text: string): string {
     return '';
   });
 
-  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[?1049h or \x1b[38:2::255m) including colon-separated CSI
-  clean = clean.replace(/\x1b\[[?<=>]?[\d;:]*[!"#$%&'()*+,\-./]*[a-zA-Z~]/g, '');
+  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[?1049h or \x1b[2@ or \x1b[38:2::255m) including colon-separated CSI
+  // CSI final bytes strictly cover the range 0x40-0x7e (@ to ~)
+  clean = clean.replace(/\x1b\[[?<=>]?[\d;:]*[!"#$%&'()*+,\-./]*[\x40-\x7e]/g, '');
 
   // 3. Strip OSC sequences safely even if incomplete (stops at next \x1b or end of string if no BEL/ST)
   clean = clean.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?/g, '');
