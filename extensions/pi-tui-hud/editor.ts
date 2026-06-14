@@ -35,9 +35,11 @@ export class HudCustomEditor extends CustomEditor {
 
       if (paddingLen >= 0) {
         const borderChar = currentTheme.fg('borderAccent', '─');
+        const leftBracket = currentTheme.fg('borderAccent', '┤');
+        const rightBracket = currentTheme.fg('borderAccent', '├');
         const leftCorner = currentTheme.fg('borderAccent', '┌');
         const rightCorner = currentTheme.fg('borderAccent', '┐');
-        result[0] = leftCorner + borderChar + '┤ ' + displayInfo + ' ├' + borderChar.repeat(paddingLen) + rightCorner;
+        result[0] = leftCorner + borderChar + leftBracket + ' ' + displayInfo + ' ' + rightBracket + borderChar.repeat(paddingLen) + rightCorner;
       }
     }
 
@@ -59,16 +61,47 @@ export function registerEditor(pi: ExtensionAPI) {
     });
   }
 
+  function disable(ctx: ExtensionContext) {
+    editorEnabled = false;
+    liveCtx = null;
+    currentTheme = null;
+    liveEditorTui = null;
+    ctx.ui.setEditorComponent(undefined);
+  }
+
   pi.on('session_start', (_event, ctx) => {
     const s = readSettings(ctx.cwd);
     if (s.enabled) {
       enable(ctx);
+    } else {
+      disable(ctx);
     }
   });
 
   pi.on('model_select', (_event, ctx) => {
-    liveCtx = ctx;
-    breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
-    liveEditorTui?.requestRender();
+    if (editorEnabled) {
+      liveCtx = ctx;
+      breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
+      liveEditorTui?.requestRender();
+    }
+  });
+
+  pi.on('session_shutdown', (_event, ctx) => {
+    if (editorEnabled) {
+      disable(ctx);
+    }
+  });
+
+  pi.events.on('hud_settings_changed', (ctx) => {
+    const s = readSettings(ctx.cwd);
+    if (s.enabled && !editorEnabled) {
+      enable(ctx);
+    } else if (!s.enabled && editorEnabled) {
+      disable(ctx);
+    } else if (editorEnabled) {
+      liveCtx = ctx;
+      breadcrumbMode = s.breadcrumb;
+      liveEditorTui?.requestRender();
+    }
   });
 }

@@ -10,4 +10,20 @@ describe('breadcrumb calculations', () => {
     expect(data.modelText).toContain('claude-3-5');
     expect(data.folderText).toContain('my-project');
   });
+
+  it('should render breadcrumb info with correct color and styling', () => {
+    const mockTheme = {
+      fg: (token: string, text: string) => `[${token}]${text}`
+    };
+    const mockData = {
+      modelName: 'claude',
+      folder: 'project',
+      modelText: 'claude',
+      folderText: 'project'
+    };
+    const info = renderBreadcrumbInfo(mockData, mockTheme as any);
+    expect(info).toContain('project');
+    expect(info).toContain('claude');
+    expect(info).toContain('[dim]');
+  });
 });
