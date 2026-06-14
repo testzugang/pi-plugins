@@ -5,7 +5,7 @@ import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
 
 function sanitizeStatusText(text: string): string {
   return text
-    .replace(/[\r\n\t]/g, ' ')
+    .replace(/[\r\t\x00-\x06\x08-\x1a\x1c-\x1f]/g, ' ')
     .replace(/ +/g, ' ')
     .trim();
 }

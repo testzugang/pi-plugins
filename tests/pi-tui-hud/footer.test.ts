@@ -260,4 +260,62 @@ describe('footer registration and rendering', () => {
     const extremeLines = renderer.render(3);
     expect(visibleWidth(extremeLines[0])).toBe(3);
   });
+
+  it('should handle live streaming usage and request render on message updates', () => {
+    let agentStartHandler: Function = () => {};
+    let messageUpdateHandler: Function = () => {};
+    let messageEndHandler: Function = () => {};
+
+    mockPi.on.mockImplementation((event: string, handler: Function) => {
+      if (event === 'session_start') {
+        sessionStartHandler = handler;
+      } else if (event === 'agent_start') {
+        agentStartHandler = handler;
+      } else if (event === 'message_update') {
+        messageUpdateHandler = handler;
+      } else if (event === 'message_end') {
+        messageEndHandler = handler;
+      }
+    });
+
+    vi.mocked(readSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text };
+    const mockFooterData = {
+      getGitBranch: () => 'main',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => new Map(),
+    };
+
+    // Trigger footer setup to capture liveTui
+    footerRendererFactory(mockTui, mockTheme, mockFooterData);
+
+    // Trigger agent_start
+    agentStartHandler();
+    expect(mockTui.requestRender).toHaveBeenCalledTimes(1);
+
+    // Trigger message_update with live usage
+    const mockMessage = { usage: { input: 2000, output: 1000, cost: { total: 0.05 } } };
+    messageUpdateHandler({ message: mockMessage });
+    expect(mockTui.requestRender).toHaveBeenCalledTimes(2);
+
+    // Trigger message_end
+    messageEndHandler();
+    expect(mockTui.requestRender).toHaveBeenCalledTimes(3);
+  });
 });
