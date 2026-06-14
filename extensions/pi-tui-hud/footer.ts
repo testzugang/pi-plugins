@@ -3,6 +3,13 @@ import { readSettings } from './settings';
 import { withIcon } from './utils';
 import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
 
+function sanitizeStatusText(text: string): string {
+  return text
+    .replace(/[\r\n\t]/g, ' ')
+    .replace(/ +/g, ' ')
+    .trim();
+}
+
 export function formatTokenCount(count: number): string {
   if (count < 1000) return count.toString();
   if (count < 1000000) return `${(count / 1000).toFixed(1).replace('.0', '')}k`;
@@ -53,17 +60,24 @@ export function registerFooter(pi: ExtensionAPI) {
 
           // Build context percentage
           const contextUsage = ctx.getContextUsage();
-          const tokens = contextUsage?.tokens ?? (totalInput + totalOutput + totalCacheRead);
           const maxWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 100000;
-          
-          let ratio = maxWindow > 0 ? (tokens / maxWindow) * 100 : 0;
+          let ratio: number | null = null;
+          let pctStr = '';
+
           if (contextUsage && typeof contextUsage.percent === 'number') {
             ratio = contextUsage.percent;
+            pctStr = `${ratio.toFixed(1)}%/${formatTokenCount(maxWindow)}`;
+          } else if (contextUsage && typeof contextUsage.tokens === 'number') {
+            ratio = maxWindow > 0 ? (contextUsage.tokens / maxWindow) * 100 : 0;
+            pctStr = `${ratio.toFixed(1)}%/${formatTokenCount(maxWindow)}`;
+          } else {
+            pctStr = `?%/${formatTokenCount(maxWindow)}`;
           }
-          
-          let pctStr = `${ratio.toFixed(1)}%/${formatTokenCount(maxWindow)}`;
-          if (ratio > 90) pctStr = theme.fg('error', pctStr);
-          else if (ratio > 70) pctStr = theme.fg('warning', pctStr);
+
+          if (ratio !== null) {
+            if (ratio > 90) pctStr = theme.fg('error', pctStr);
+            else if (ratio > 70) pctStr = theme.fg('warning', pctStr);
+          }
 
           // Build Cache Hit Rate
           const promptTokens = totalInput + totalCacheRead + totalCacheWrite;
@@ -82,14 +96,26 @@ export function registerFooter(pi: ExtensionAPI) {
           const leftWidth = visibleWidth(leftSegment);
           const rightWidth = visibleWidth(rightSegment);
           const spaceNeeded = width - leftWidth - rightWidth;
-          const padding = spaceNeeded > 0 ? ' '.repeat(spaceNeeded) : '  ';
+          
+          let statsLine: string;
+          if (spaceNeeded >= 0) {
+            statsLine = `${leftSegment}${' '.repeat(spaceNeeded)}${rightSegment}`;
+          } else {
+            const availLeft = Math.max(0, width - rightWidth - 2);
+            const truncatedLeft = truncateToWidth(leftSegment, availLeft, '...');
+            const padSize = Math.max(0, width - visibleWidth(truncatedLeft) - rightWidth);
+            statsLine = `${truncatedLeft}${' '.repeat(padSize)}${rightSegment}`;
+          }
 
-          const lines = [`${leftSegment}${padding}${rightSegment}`];
+          const lines = [statsLine];
 
           // Line 2: Extension statuses
           const extensionStatuses = footerData.getExtensionStatuses() as Map<string, string>;
           if (extensionStatuses && extensionStatuses.size > 0) {
-            const statusLine = Array.from(extensionStatuses.values()).join('  ');
+            const sorted = Array.from(extensionStatuses.entries())
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([, text]) => sanitizeStatusText(text));
+            const statusLine = sorted.join('  ');
             lines.push(truncateToWidth(statusLine, width, theme.fg('dim', '...')));
           }
 
