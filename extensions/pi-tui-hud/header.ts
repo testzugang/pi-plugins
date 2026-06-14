@@ -18,25 +18,26 @@ export function getGradientText(text: string, startHex: string, endHex: string):
   if (!start || !end) return text;
 
   let result = '';
-  const chars = Array.from(text);
-  const steps = chars.length;
+  // Use Intl.Segmenter for grapheme-cluster safe splitting (protects ZWJ, skin tones, etc.)
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+  const segments = Array.from(segmenter.segment(text)).map((s) => s.segment);
+  const steps = segments.length;
   for (let i = 0; i < steps; i++) {
     const ratio = steps > 1 ? i / (steps - 1) : 0;
     const r = Math.round(start.r + ratio * (end.r - start.r));
     const g = Math.round(start.g + ratio * (end.g - start.g));
     const b = Math.round(start.b + ratio * (end.b - start.b));
-    result += `\x1b[38;2;${r};${g};${b}m${chars[i]}\x1b[39m`;
+    result += `\x1b[38;2;${r};${g};${b}m${segments[i]}\x1b[39m`;
   }
   return result;
 }
 
 export function generateGradientHeader(logoText: string, width: number): string {
-  const logoLen = visibleWidth(logoText);
-  const fullLength = logoLen + 4; // Includes '⚡ ' (2) and ' ⚡' (2)
-  if (width < fullLength) {
+  const decorLen = visibleWidth(`⚡ ${logoText} ⚡`);
+  if (width < decorLen) {
     return truncateToWidth(logoText, width, '...');
   }
-  const paddingSize = Math.max(0, Math.floor((width - fullLength) / 2));
+  const paddingSize = Math.max(0, Math.floor((width - decorLen) / 2));
   const padding = ' '.repeat(paddingSize);
 
   // Gradient bar: Pink (#d787af) -> Cyan (#00afaf)

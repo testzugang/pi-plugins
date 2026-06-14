@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { generateGradientHeader, getGradientText, registerHeader } from '../../extensions/pi-tui-hud/header';
 import { readSettings } from '../../extensions/pi-tui-hud/settings';
+import { visibleWidth } from '@earendil-works/pi-tui';
 
 vi.mock('../../extensions/pi-tui-hud/settings', () => ({
   readSettings: vi.fn(),
@@ -54,6 +55,12 @@ describe('gradient logo header', () => {
     expect(stripAnsi(gradient)).toBe('🌟✨');
   });
 
+  it('should protect complex ZWJ grapheme clusters from being split by colors', () => {
+    const text = '👩‍👩‍👧‍👦'; // Family emoji with multiple ZWJ joins
+    const gradient = getGradientText(text, '#ff0000', '#0000ff');
+    expect(stripAnsi(gradient)).toBe('👩‍👩‍👧‍👦');
+  });
+
   it('should render colored gradient bar and verify mathematical centering', () => {
     const logoText = 'PI AGENT';
     const width = 80;
@@ -61,10 +68,12 @@ describe('gradient logo header', () => {
     
     expect(stripAnsi(rendered)).toContain('PI AGENT');
 
-    // '⚡ ' (2) + 'PI AGENT' (8) + ' ⚡' (2) = 12 columns
-    // padding: (80 - 12) / 2 = 34 spaces
+    // Dynamically calculate visible width of decorated logo
+    const decorLen = visibleWidth(`⚡ ${logoText} ⚡`);
+    const expectedPaddingSize = Math.max(0, Math.floor((width - decorLen) / 2));
+    
     const leadingSpaces = rendered.match(/^ */)?.[0] || '';
-    expect(leadingSpaces.length).toBe(34);
+    expect(leadingSpaces.length).toBe(expectedPaddingSize);
     expect(rendered.endsWith('⚡')).toBe(true);
   });
 
