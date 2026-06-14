@@ -56,9 +56,8 @@ function sanitizeStatusText(text: string): string {
     return '';
   });
 
-  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[?1049h or \x1b[2@ or \x1b[38:2::255m) including colon-separated CSI
-  // CSI final bytes strictly cover the range 0x40-0x7e (@ to ~)
-  clean = clean.replace(/\x1b\[[?<=>]?[\d;:]*[!"#$%&'()*+,\-./]*[\x40-\x7e]/g, '');
+  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[?1049h or \x1b[0 q) including intermediate spaces and full parameter range
+  clean = clean.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g, '');
 
   // 3. Strip OSC sequences safely even if incomplete (stops at next \x1b or end of string if no BEL/ST)
   clean = clean.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?/g, '');
@@ -66,9 +65,9 @@ function sanitizeStatusText(text: string): string {
   // 4. Strip all other ESC sequences (DCS, SS2, SS3, charsets, etc.)
   clean = clean.replace(/\x1b[\x20-\x2f]*[\x30-\x7e]/g, '');
 
-  // 5. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f) including tab (0x09)
+  // 5. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f, and C1 8-bit controls 0x80-0x9f) including tab (0x09)
   clean = clean.replace(/\x1b/g, ' ');
-  clean = clean.replace(/[\x00-\x09\x0a-\x1a\x1c-\x1f\x7f]/g, ' ');
+  clean = clean.replace(/[\x00-\x09\x0a-\x1a\x1c-\x1f\x7f\x80-\x9f]/g, ' ');
 
   // 6. Restore masked safe SGR color codes
   const restoreRegex = new RegExp(`${tokenPrefix}(\\d+)__`, 'g');
@@ -188,7 +187,7 @@ export function registerFooter(pi: ExtensionAPI) {
           if (extensionStatuses && extensionStatuses.size > 0) {
             const sorted = Array.from(extensionStatuses.entries())
               .sort(([a], [b]) => a.localeCompare(b))
-              .map(([, text]) => sanitizeStatusText(text));
+              .map(([, text]) => sanitizeStatusText(text) + '\x1b[0m'); // Append reset to each entry to isolate styles
             const statusLine = sorted.join('  ');
             lines.push(truncateToWidth(statusLine, width, theme.fg('dim', '...')) + '\x1b[0m');
           }

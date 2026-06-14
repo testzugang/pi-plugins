@@ -215,19 +215,19 @@ describe('footer registration and rendering', () => {
       onBranchChange: () => vi.fn(),
       // Unsorted map with dangerous control characters, unclosed ESCs, CSIs, disallowed SGR, colon CSIs, tabs, and OSC exploits
       getExtensionStatuses: () => new Map([
-        ['z-ext', 'Z-Status\twith\tcontrol\x07chars and unclosed \x1b raw ESC'],
-        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b[200~private \x1b[2@finalbyte \x1b[>0cintermediates \x1b[38:2::255mcolonCSI \x1b[38;5;999999munboundedSGR \x1b[5mblink \x1b[8mhidden \x1b]2;incomplete OSC with spaces'],
+        ['z-ext', 'Z-Status\twith\tcontrol\x07chars and unclosed \x1b raw ESC \u009b2JC1CSI \u009d2;C1OSC\u0007'],
+        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b[0 qintermediateSpace \x1b[200~private \x1b[2@finalbyte \x1b[>0cintermediates \x1b[38:2::255mcolonCSI \x1b[38;5;999999munboundedSGR \x1b[5mblink \x1b[8mhidden \x1b]2;incomplete OSC with spaces'],
       ]),
     };
 
     const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
-    const lines = renderer.render(150);
+    const lines = renderer.render(200);
 
     // Line 2 should be sorted alphabetically:
     // a-ext first: SGR color code \x1b[31m and \x1b[39m are preserved. CSI (\x1b[2J, \x1b[200~, \x1b[2@, \x1b[>0c), colon CSIs, other ESC families, disallowed SGR (blink, hidden, unbounded), and OSC are stripped.
     // z-ext next: \x07 (BEL), \t (tab 0x09), and raw \x1b are replaced with spaces or sanitized.
-    expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs private finalbyte intermediates colonCSI unboundedSGR blink hidden');
-    expect(lines[1]).toContain('Z-Status with control chars and unclosed aw ESC');
+    expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs intermediateSpace private finalbyte intermediates colonCSI unboundedSGR blink hidden\x1b[0m');
+    expect(lines[1]).toContain('Z-Status with control chars and unclosed aw ESC 2JC1CSI 2;C1OSC\x1b[0m');
     // Verify style reset is appended to prevent leaks
     expect(lines[1].endsWith('\x1b[0m')).toBe(true);
   });
