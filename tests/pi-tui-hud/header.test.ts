@@ -11,8 +11,8 @@ describe('gradient logo header', () => {
 
     // '⚡ ' (2) + 'PI AGENT' (8) + ' ⚡' (2) = 12 columns
     // padding: (80 - 12) / 2 = 34 spaces
-    const expectedPadding = ' '.repeat(34);
-    expect(rendered.startsWith(expectedPadding)).toBe(true);
+    const leadingSpaces = rendered.match(/^ */)?.[0] || '';
+    expect(leadingSpaces.length).toBe(34);
     expect(rendered.endsWith('⚡')).toBe(true);
   });
 });
