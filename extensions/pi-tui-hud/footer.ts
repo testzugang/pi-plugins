@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
 import { readSettings } from './settings';
 import { withIcon } from './utils';
+import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
 
 export function formatTokenCount(count: number): string {
   if (count < 1000) return count.toString();
@@ -54,7 +55,11 @@ export function registerFooter(pi: ExtensionAPI) {
           const contextUsage = ctx.getContextUsage();
           const tokens = contextUsage?.tokens ?? (totalInput + totalOutput + totalCacheRead);
           const maxWindow = contextUsage?.contextWindow ?? ctx.model?.contextWindow ?? 100000;
-          const ratio = maxWindow > 0 ? (tokens / maxWindow) * 100 : 0;
+          
+          let ratio = maxWindow > 0 ? (tokens / maxWindow) * 100 : 0;
+          if (contextUsage && typeof contextUsage.percent === 'number') {
+            ratio = contextUsage.percent;
+          }
           
           let pctStr = `${ratio.toFixed(1)}%/${formatTokenCount(maxWindow)}`;
           if (ratio > 90) pctStr = theme.fg('error', pctStr);
@@ -74,7 +79,9 @@ export function registerFooter(pi: ExtensionAPI) {
           const tl = pi.getThinkingLevel() || 'off';
           const rightSegment = tl !== 'off' ? theme.fg('accent', `⚡ ${tl}`) : '';
 
-          const spaceNeeded = width - leftSegment.length - rightSegment.length;
+          const leftWidth = visibleWidth(leftSegment);
+          const rightWidth = visibleWidth(rightSegment);
+          const spaceNeeded = width - leftWidth - rightWidth;
           const padding = spaceNeeded > 0 ? ' '.repeat(spaceNeeded) : '  ';
 
           const lines = [`${leftSegment}${padding}${rightSegment}`];
@@ -83,7 +90,7 @@ export function registerFooter(pi: ExtensionAPI) {
           const extensionStatuses = footerData.getExtensionStatuses() as Map<string, string>;
           if (extensionStatuses && extensionStatuses.size > 0) {
             const statusLine = Array.from(extensionStatuses.values()).join('  ');
-            lines.push(statusLine.substring(0, width));
+            lines.push(truncateToWidth(statusLine, width, theme.fg('dim', '...')));
           }
 
           return lines;
