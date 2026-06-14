@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
 import { CustomEditor } from '@earendil-works/pi-coding-agent';
-import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
+import { visibleWidth, truncateToWidth, Text } from '@earendil-works/pi-tui';
 import { getBreadcrumbData, renderBreadcrumbInfo } from './breadcrumb';
 import { readSettings } from './settings';
 
@@ -15,10 +15,11 @@ export class HudCustomEditor extends CustomEditor {
     if (lines.length < 3) return lines;
 
     const result = [...lines];
+    const theme = liveCtx?.ui?.theme || currentTheme;
 
-    if (breadcrumbMode === 'inner' && liveCtx && currentTheme) {
+    if (breadcrumbMode === 'inner' && liveCtx && theme) {
       const data = getBreadcrumbData(liveCtx);
-      const infoPart = renderBreadcrumbInfo(data, currentTheme);
+      const infoPart = renderBreadcrumbInfo(data, theme);
       const infoWidth = visibleWidth(infoPart);
       
       let paddingLen = width - 7 - infoWidth;
@@ -34,11 +35,11 @@ export class HudCustomEditor extends CustomEditor {
       }
 
       if (paddingLen >= 0) {
-        const borderChar = currentTheme.fg('borderAccent', '─');
-        const leftBracket = currentTheme.fg('borderAccent', '┤');
-        const rightBracket = currentTheme.fg('borderAccent', '├');
-        const leftCorner = currentTheme.fg('borderAccent', '┌');
-        const rightCorner = currentTheme.fg('borderAccent', '┐');
+        const borderChar = theme.fg('borderAccent', '─');
+        const leftBracket = theme.fg('borderAccent', '┤');
+        const rightBracket = theme.fg('borderAccent', '├');
+        const leftCorner = theme.fg('borderAccent', '┌');
+        const rightCorner = theme.fg('borderAccent', '┐');
         result[0] = leftCorner + borderChar + leftBracket + ' ' + displayInfo + ' ' + rightBracket + borderChar.repeat(paddingLen) + rightCorner;
       }
     }
@@ -49,16 +50,38 @@ export class HudCustomEditor extends CustomEditor {
 
 export function registerEditor(pi: ExtensionAPI) {
   let editorEnabled = false;
+  let unsubSettings: (() => void) | null = null;
+
+  function updateTopWidget(ctx: ExtensionContext) {
+    if (!ctx.hasUI || !ctx.ui) return;
+    const s = readSettings(ctx.cwd);
+    if (s.enabled && s.breadcrumb === 'top') {
+      ctx.ui.setWidget('hud-breadcrumb-widget', (tui, theme) => {
+        const data = getBreadcrumbData(ctx);
+        return new Text(renderBreadcrumbInfo(data, theme), 0, 0);
+      }, { placement: 'aboveEditor' });
+    } else {
+      ctx.ui.setWidget('hud-breadcrumb-widget', undefined);
+    }
+  }
 
   function enable(ctx: ExtensionContext) {
     editorEnabled = true;
     liveCtx = ctx;
     currentTheme = ctx.ui.theme;
-    breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
-    ctx.ui.setEditorComponent((tui: any, theme: any, keybindings: any) => {
-      liveEditorTui = tui;
-      return new HudCustomEditor(tui, theme, keybindings);
-    });
+    
+    const s = readSettings(ctx.cwd);
+    breadcrumbMode = s.breadcrumb;
+
+    if (s.breadcrumb === 'inner') {
+      ctx.ui.setEditorComponent((tui: any, theme: any, keybindings: any) => {
+        liveEditorTui = tui;
+        return new HudCustomEditor(tui, theme, keybindings);
+      });
+    } else {
+      ctx.ui.setEditorComponent(undefined);
+    }
+    updateTopWidget(ctx);
   }
 
   function disable(ctx: ExtensionContext) {
@@ -66,7 +89,10 @@ export function registerEditor(pi: ExtensionAPI) {
     liveCtx = null;
     currentTheme = null;
     liveEditorTui = null;
-    ctx.ui.setEditorComponent(undefined);
+    if (ctx.hasUI && ctx.ui) {
+      ctx.ui.setEditorComponent(undefined);
+      ctx.ui.setWidget('hud-breadcrumb-widget', undefined);
+    }
   }
 
   pi.on('session_start', (_event, ctx) => {
@@ -76,12 +102,43 @@ export function registerEditor(pi: ExtensionAPI) {
     } else {
       disable(ctx);
     }
+
+    if (unsubSettings) {
+      unsubSettings();
+    }
+
+    unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
+      if (!changeCtx || typeof changeCtx !== 'object' || !('cwd' in changeCtx)) return;
+      
+      const updatedSettings = readSettings(changeCtx.cwd);
+      if (updatedSettings.enabled && !editorEnabled) {
+        enable(changeCtx);
+      } else if (!updatedSettings.enabled && editorEnabled) {
+        disable(changeCtx);
+      } else if (editorEnabled) {
+        liveCtx = changeCtx;
+        breadcrumbMode = updatedSettings.breadcrumb;
+        
+        if (updatedSettings.breadcrumb === 'inner') {
+          ctx.ui.setEditorComponent((tui: any, theme: any, keybindings: any) => {
+            liveEditorTui = tui;
+            return new HudCustomEditor(tui, theme, keybindings);
+          });
+        } else {
+          ctx.ui.setEditorComponent(undefined);
+        }
+        
+        updateTopWidget(changeCtx);
+        liveEditorTui?.requestRender();
+      }
+    });
   });
 
   pi.on('model_select', (_event, ctx) => {
     if (editorEnabled) {
       liveCtx = ctx;
       breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
+      updateTopWidget(ctx);
       liveEditorTui?.requestRender();
     }
   });
@@ -90,18 +147,9 @@ export function registerEditor(pi: ExtensionAPI) {
     if (editorEnabled) {
       disable(ctx);
     }
-  });
-
-  pi.events.on('hud_settings_changed', (ctx) => {
-    const s = readSettings(ctx.cwd);
-    if (s.enabled && !editorEnabled) {
-      enable(ctx);
-    } else if (!s.enabled && editorEnabled) {
-      disable(ctx);
-    } else if (editorEnabled) {
-      liveCtx = ctx;
-      breadcrumbMode = s.breadcrumb;
-      liveEditorTui?.requestRender();
+    if (unsubSettings) {
+      unsubSettings();
+      unsubSettings = null;
     }
   });
 }
