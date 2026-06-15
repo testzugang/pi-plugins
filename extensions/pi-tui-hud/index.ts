@@ -2,11 +2,9 @@ import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { registerEditor } from './editor';
 import { registerHeader } from './header';
 import { registerFooter } from './footer';
-import { readSettings, writeSetting, setPiRef } from './settings';
+import { readEffectiveSettings, readSettings, writeSetting } from './settings';
 
 export default function (pi: ExtensionAPI) {
-  // Set global Pi reference for settings flag evaluations
-  setPiRef(pi);
 
   pi.registerFlag('hud', {
     description: 'Enable custom pi-tui-hud status bar, header, and breadcrumbs',
@@ -45,8 +43,8 @@ export default function (pi: ExtensionAPI) {
       }
 
       if (arg === 'info') {
-        const c = readSettings(ctx.cwd);
         const cliEnabled = pi.getFlag('hud') !== false;
+        const c = readEffectiveSettings(ctx.cwd, { hudEnabled: cliEnabled });
         ctx.ui.notify(
           `HUD Settings:\n` +
             `• Enabled: ${c.enabled ? 'yes' : 'no'}${cliEnabled ? '' : ' (forced off by CLI --hud=false)'}\n` +

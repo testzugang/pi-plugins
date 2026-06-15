@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { formatTokenCount, registerFooter } from '../../extensions/pi-tui-hud/footer';
-import { readSettings } from '../../extensions/pi-tui-hud/settings';
+import { readEffectiveSettings } from '../../extensions/pi-tui-hud/settings';
 import { visibleWidth } from '@earendil-works/pi-tui';
 
 vi.mock('../../extensions/pi-tui-hud/settings', () => ({
-  readSettings: vi.fn(),
+  readEffectiveSettings: vi.fn(),
   DEFAULT_SETTINGS: {
     enabled: true,
     breadcrumb: 'inner',
@@ -37,6 +37,7 @@ describe('footer registration and rendering', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockPi = {
+      getFlag: vi.fn().mockReturnValue(true),
       on: vi.fn().mockImplementation((event, handler) => {
         if (event === 'session_start') {
           sessionStartHandler = handler;
@@ -74,8 +75,25 @@ describe('footer registration and rendering', () => {
     vi.restoreAllMocks();
   });
 
+  it('should not register footer when HUD is forced off by runtime flag', () => {
+    mockPi.getFlag.mockReturnValue(false);
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: false,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    expect(readEffectiveSettings).toHaveBeenCalledWith('/mock/cwd', { hudEnabled: false });
+    expect(mockCtx.ui.setFooter).toHaveBeenCalledWith(undefined);
+  });
+
   it('should register and render complete TUI footer with correct segments', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -129,7 +147,7 @@ describe('footer registration and rendering', () => {
   });
 
   it('should render context usage with threshold-specific emphasis', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -180,7 +198,7 @@ describe('footer registration and rendering', () => {
   });
 
   it('should render unknown percentage when context usage is missing or null', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -218,7 +236,7 @@ describe('footer registration and rendering', () => {
   });
 
   it('should sort and sanitize extension statuses cleanly', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -267,7 +285,7 @@ describe('footer registration and rendering', () => {
   });
 
   it('should handle narrow terminal widths safely without overflowing maximum width', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -326,7 +344,7 @@ describe('footer registration and rendering', () => {
       }
     });
 
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,

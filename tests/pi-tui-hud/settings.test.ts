@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import { join } from 'node:path';
-import { readSettings, writeSetting, DEFAULT_SETTINGS, setPiRef } from '../../extensions/pi-tui-hud/settings';
+import { readEffectiveSettings, readSettings, writeSetting, DEFAULT_SETTINGS } from '../../extensions/pi-tui-hud/settings';
 
 vi.mock('node:fs');
 vi.mock('node:os', () => ({
@@ -117,19 +117,29 @@ describe('settings management', () => {
     expect(fs.writeFileSync).not.toHaveBeenCalled();
   });
 
-  it('should respect the global Pi CLI flag when set to false', () => {
+  it('should return persisted settings without applying the runtime HUD flag', () => {
     vi.mocked(fs.existsSync).mockReturnValue(false);
 
-    const mockPi = {
-      getFlag: vi.fn().mockReturnValue(false),
-    };
-    setPiRef(mockPi);
-
     const settings = readSettings(cwd);
-    expect(settings.enabled).toBe(false); // Forced false by CLI flag
 
-    // Restore ref
-    setPiRef(null);
+    expect(settings.enabled).toBe(true);
+  });
+
+  it('should force effective settings off when the runtime HUD flag is disabled', () => {
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    const settings = readEffectiveSettings(cwd, { hudEnabled: false });
+
+    expect(settings).toEqual({ ...DEFAULT_SETTINGS, enabled: false });
+  });
+
+  it('should preserve persisted disabled state when resolving effective settings', () => {
+    vi.mocked(fs.existsSync).mockImplementation((path) => path === localPath);
+    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ enabled: false }));
+
+    const settings = readEffectiveSettings(cwd, { hudEnabled: true });
+
+    expect(settings.enabled).toBe(false);
   });
 
   it('should propagate write/filesystem errors during writeSetting', () => {

@@ -1,5 +1,5 @@
 import type { ExtensionAPI, ExtensionContext, Theme } from '@earendil-works/pi-coding-agent';
-import { readSettings, DEFAULT_SETTINGS } from './settings';
+import { readEffectiveSettings, DEFAULT_SETTINGS } from './settings';
 import { withIcon, isExtensionContext } from './utils';
 import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
 
@@ -114,10 +114,14 @@ export function registerFooter(pi: ExtensionAPI) {
   let cachedSettings = DEFAULT_SETTINGS;
   let footerEnabled = false;
 
+  function runtimeSettings() {
+    return { hudEnabled: pi.getFlag('hud') !== false };
+  }
+
   function enable(ctx: ExtensionContext) {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
     footerEnabled = true;
-    cachedSettings = readSettings(ctx.cwd);
+    cachedSettings = readEffectiveSettings(ctx.cwd, runtimeSettings());
 
     ctx.ui.setFooter((tui: any, theme: any, footerData: any) => {
       liveTui = tui;
@@ -234,7 +238,7 @@ export function registerFooter(pi: ExtensionAPI) {
   pi.on('session_start', (_event, ctx: ExtensionContext) => {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
 
-    const s = readSettings(ctx.cwd);
+    const s = readEffectiveSettings(ctx.cwd, runtimeSettings());
     if (s.enabled && s.footer) {
       enable(ctx);
     } else {
@@ -248,7 +252,7 @@ export function registerFooter(pi: ExtensionAPI) {
     unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
       if (!isExtensionContext(changeCtx)) return;
 
-      const updatedSettings = readSettings(changeCtx.cwd);
+      const updatedSettings = readEffectiveSettings(changeCtx.cwd, runtimeSettings());
       cachedSettings = updatedSettings;
 
       if (updatedSettings.enabled && updatedSettings.footer && !footerEnabled) {

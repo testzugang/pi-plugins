@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { visibleWidth } from '@earendil-works/pi-tui';
 import { HudCustomEditor, registerEditor } from '../../extensions/pi-tui-hud/editor';
-import { readSettings } from '../../extensions/pi-tui-hud/settings';
+import { readEffectiveSettings } from '../../extensions/pi-tui-hud/settings';
 
 vi.mock('node:fs');
 vi.mock('../../extensions/pi-tui-hud/settings', () => ({
-  readSettings: vi.fn(),
+  readEffectiveSettings: vi.fn(),
 }));
 
 function createRenderTheme() {
@@ -124,6 +124,7 @@ describe('editor registration and lifecycle', () => {
 
     mockPi = {
       getThinkingLevel: vi.fn().mockReturnValue('med'),
+      getFlag: vi.fn().mockReturnValue(true),
       on: vi.fn().mockImplementation((event, handler) => {
         eventHandlers[event] = handler;
       }),
@@ -163,7 +164,7 @@ describe('editor registration and lifecycle', () => {
     expect(mockPi.on).toHaveBeenCalledWith('thinking_level_select', expect.any(Function));
     expect(mockPi.on).toHaveBeenCalledWith('session_shutdown', expect.any(Function));
 
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -174,8 +175,25 @@ describe('editor registration and lifecycle', () => {
     expect(mockPi.events.on).toHaveBeenCalledWith('hud_settings_changed', expect.any(Function));
   });
 
+  it('should not register CustomEditor when HUD is forced off by runtime flag', () => {
+    mockPi.getFlag.mockReturnValue(false);
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: false,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    registerEditor(mockPi);
+    eventHandlers['session_start']({}, mockCtx);
+
+    expect(readEffectiveSettings).toHaveBeenCalledWith('/mock/cwd', { hudEnabled: false });
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
+  });
+
   it('should register CustomEditor when enabled and breadcrumb is inner', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -191,7 +209,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('should register top widget instead of CustomEditor when enabled and breadcrumb is top', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'top',
       footer: true,
@@ -207,7 +225,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('should do nothing on hud_settings_changed if payload is invalid', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -227,7 +245,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('should remove editor component and top widget when breadcrumb is hide', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'hide',
       footer: true,
@@ -243,7 +261,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('should clean up completely and call unsubscribe on shutdown', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -261,7 +279,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('keeps a previously registered editor instance isolated after model_select creates newer state', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -300,7 +318,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('keeps a delayed old editor factory isolated after model_select creates newer state', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -342,7 +360,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('keeps two editor instances from the same factory isolated with different themes', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -373,7 +391,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('should update state and request render on model_select', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -398,7 +416,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('should update state and request render on thinking_level_select', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -421,8 +439,44 @@ describe('editor registration and lifecycle', () => {
     expect(mockTui.requestRender).toHaveBeenCalled();
   });
 
+  it('clears editor and widget on model_select when HUD becomes forced off', () => {
+    vi.mocked(readEffectiveSettings)
+      .mockReturnValueOnce({
+        enabled: true,
+        breadcrumb: 'inner',
+        footer: true,
+        header: true,
+        'header-info': false,
+      })
+      .mockReturnValueOnce({
+        enabled: true,
+        breadcrumb: 'inner',
+        footer: true,
+        header: true,
+        'header-info': false,
+      })
+      .mockReturnValue({
+        enabled: false,
+        breadcrumb: 'inner',
+        footer: true,
+        header: true,
+        'header-info': false,
+      });
+
+    registerEditor(mockPi);
+    eventHandlers['session_start']({}, mockCtx);
+    mockCtx.ui.setEditorComponent.mockClear();
+    mockCtx.ui.setWidget.mockClear();
+
+    eventHandlers['model_select']({}, mockCtx);
+
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledTimes(1);
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
+    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith('hud-breadcrumb-widget', undefined);
+  });
+
   it('clears inner editor on model_select when current breadcrumb setting is top', () => {
-    vi.mocked(readSettings)
+    vi.mocked(readEffectiveSettings)
       .mockReturnValueOnce({
         enabled: true,
         breadcrumb: 'inner',
@@ -447,8 +501,44 @@ describe('editor registration and lifecycle', () => {
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
   });
 
+  it('clears editor and widget on thinking_level_select when HUD becomes forced off', () => {
+    vi.mocked(readEffectiveSettings)
+      .mockReturnValueOnce({
+        enabled: true,
+        breadcrumb: 'inner',
+        footer: true,
+        header: true,
+        'header-info': false,
+      })
+      .mockReturnValueOnce({
+        enabled: true,
+        breadcrumb: 'inner',
+        footer: true,
+        header: true,
+        'header-info': false,
+      })
+      .mockReturnValue({
+        enabled: false,
+        breadcrumb: 'inner',
+        footer: true,
+        header: true,
+        'header-info': false,
+      });
+
+    registerEditor(mockPi);
+    eventHandlers['session_start']({}, mockCtx);
+    mockCtx.ui.setEditorComponent.mockClear();
+    mockCtx.ui.setWidget.mockClear();
+
+    eventHandlers['thinking_level_select']({ level: 'high' }, mockCtx);
+
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledTimes(1);
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
+    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith('hud-breadcrumb-widget', undefined);
+  });
+
   it('clears inner editor on thinking_level_select when current breadcrumb setting is hide', () => {
-    vi.mocked(readSettings)
+    vi.mocked(readEffectiveSettings)
       .mockReturnValueOnce({
         enabled: true,
         breadcrumb: 'inner',
@@ -474,7 +564,7 @@ describe('editor registration and lifecycle', () => {
   });
 
   it('should dynamically enable or disable on settings changed event', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: false,
       breadcrumb: 'hide',
       footer: true,
@@ -488,7 +578,7 @@ describe('editor registration and lifecycle', () => {
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
 
     // Simulate settings changing to inner breadcrumb
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -501,7 +591,7 @@ describe('editor registration and lifecycle', () => {
     expect(mockCtx.ui.setEditorComponent).toHaveBeenLastCalledWith(expect.any(Function));
 
     // Simulate settings changing back to disabled
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: false,
       breadcrumb: 'inner',
       footer: true,

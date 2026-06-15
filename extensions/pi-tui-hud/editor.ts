@@ -2,7 +2,7 @@ import type { ExtensionAPI, ExtensionContext, Theme } from '@earendil-works/pi-c
 import { CustomEditor } from '@earendil-works/pi-coding-agent';
 import { visibleWidth, truncateToWidth, Text } from '@earendil-works/pi-tui';
 import { getBreadcrumbData, renderBreadcrumbInfo, type BreadcrumbData } from './breadcrumb';
-import { readSettings, type HudSettings } from './settings';
+import { readEffectiveSettings, type HudSettings } from './settings';
 import { isExtensionContext } from './utils';
 
 export interface HudEditorState {
@@ -80,9 +80,13 @@ export function registerEditor(pi: ExtensionAPI) {
     return pi.getThinkingLevel() || 'off';
   }
 
+  function runtimeSettings() {
+    return { hudEnabled: pi.getFlag('hud') !== false };
+  }
+
   function updateTopWidget(ctx: ExtensionContext) {
     if (!ctx.hasUI || !ctx.ui) return;
-    const s = readSettings(ctx.cwd);
+    const s = readEffectiveSettings(ctx.cwd, runtimeSettings());
     const thinkingLevel = activeEditorState?.thinkingLevel ?? currentThinkingLevel();
     if (s.enabled && s.breadcrumb === 'top') {
       ctx.ui.setWidget('hud-breadcrumb-widget', (_tui, theme) => {
@@ -105,7 +109,7 @@ export function registerEditor(pi: ExtensionAPI) {
 
   function enable(ctx: ExtensionContext) {
     editorEnabled = true;
-    const s = readSettings(ctx.cwd);
+    const s = readEffectiveSettings(ctx.cwd, runtimeSettings());
     activeEditorState = createEditorState(ctx, currentThinkingLevel(), s.breadcrumb);
 
     if (s.breadcrumb === 'inner') {
@@ -129,7 +133,7 @@ export function registerEditor(pi: ExtensionAPI) {
   pi.on('session_start', (_event, ctx) => {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
     
-    const s = readSettings(ctx.cwd);
+    const s = readEffectiveSettings(ctx.cwd, runtimeSettings());
     if (s.enabled) {
       enable(ctx);
     } else {
@@ -143,7 +147,7 @@ export function registerEditor(pi: ExtensionAPI) {
     unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
       if (!isExtensionContext(changeCtx)) return;
       
-      const updatedSettings = readSettings(changeCtx.cwd);
+      const updatedSettings = readEffectiveSettings(changeCtx.cwd, runtimeSettings());
       if (updatedSettings.enabled && !editorEnabled) {
         enable(changeCtx);
       } else if (!updatedSettings.enabled && editorEnabled) {
@@ -167,7 +171,12 @@ export function registerEditor(pi: ExtensionAPI) {
   pi.on('model_select', (_event, ctx) => {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
     if (editorEnabled) {
-      const breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
+      const settings = readEffectiveSettings(ctx.cwd, runtimeSettings());
+      if (!settings.enabled) {
+        disable(ctx);
+        return;
+      }
+      const breadcrumbMode = settings.breadcrumb;
       activeEditorState = createEditorState(ctx, currentThinkingLevel(), breadcrumbMode);
       if (breadcrumbMode === 'inner') {
         setInnerEditor(ctx);
@@ -183,7 +192,12 @@ export function registerEditor(pi: ExtensionAPI) {
   pi.on('thinking_level_select', (event, ctx) => {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
     if (editorEnabled) {
-      const breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
+      const settings = readEffectiveSettings(ctx.cwd, runtimeSettings());
+      if (!settings.enabled) {
+        disable(ctx);
+        return;
+      }
+      const breadcrumbMode = settings.breadcrumb;
       const thinkingLevel = event.level || currentThinkingLevel();
       activeEditorState = createEditorState(ctx, thinkingLevel, breadcrumbMode);
       if (breadcrumbMode === 'inner') {

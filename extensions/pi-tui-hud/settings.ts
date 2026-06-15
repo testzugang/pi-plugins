@@ -21,10 +21,8 @@ export const DEFAULT_SETTINGS: HudSettings = {
 const BOOLEAN_KEYS: Array<keyof HudSettings> = ['enabled', 'footer', 'header', 'header-info'];
 const BREADCRUMB_VALUES: HudSettings['breadcrumb'][] = ['hide', 'top', 'inner'];
 
-let globalPiRef: any = null;
-
-export function setPiRef(pi: any) {
-  globalPiRef = pi;
+export interface HudRuntimeSettings {
+  hudEnabled?: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -80,14 +78,19 @@ export function readSettings(cwd: string): HudSettings {
   const globalPath = join(homedir(), '.pi', 'agent', 'hud', 'settings.json');
   const localPath = join(cwd, '.pi', 'hud.json');
 
-  const config = {
+  return {
     ...DEFAULT_SETTINGS,
     ...readSettingsFile(globalPath),
     ...readSettingsFile(localPath),
   };
+}
 
-  const flagEnabled = globalPiRef ? globalPiRef.getFlag('hud') !== false : true;
-  config.enabled = config.enabled && flagEnabled;
+export function readEffectiveSettings(cwd: string, runtime: HudRuntimeSettings = {}): HudSettings {
+  const config = readSettings(cwd);
+
+  if (runtime.hudEnabled === false) {
+    return { ...config, enabled: false };
+  }
 
   return config;
 }

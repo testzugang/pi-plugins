@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import hudExtension from '../../extensions/pi-tui-hud/index';
-import { readSettings, writeSetting } from '../../extensions/pi-tui-hud/settings';
+import { readEffectiveSettings, readSettings, writeSetting } from '../../extensions/pi-tui-hud/settings';
 
 vi.mock('../../extensions/pi-tui-hud/settings', () => ({
   readSettings: vi.fn(),
+  readEffectiveSettings: vi.fn(),
   writeSetting: vi.fn(),
-  setPiRef: vi.fn(),
   DEFAULT_SETTINGS: {
     enabled: true,
     breadcrumb: 'inner',
@@ -51,7 +51,7 @@ describe('index extension registration and commands', () => {
     expect(mockPi.registerCommand).toHaveBeenCalledWith('hud', expect.any(Object));
   });
 
-  it('should toggle master enabled state when calling /hud with no args', async () => {
+  it('should toggle persisted master enabled state when calling /hud with no args', async () => {
     vi.mocked(readSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
@@ -78,8 +78,8 @@ describe('index extension registration and commands', () => {
     expect(mockCtx.ui.notify).toHaveBeenCalledWith('HUD is forced off by the --hud command-line flag.', 'warning');
   });
 
-  it('should display settings info when calling /hud info', async () => {
-    vi.mocked(readSettings).mockReturnValue({
+  it('should display effective settings info when calling /hud info', async () => {
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -90,6 +90,7 @@ describe('index extension registration and commands', () => {
     hudExtension(mockPi as any);
     await hudCommand.handler('info', mockCtx);
 
+    expect(readEffectiveSettings).toHaveBeenCalledWith('/mock/cwd', { hudEnabled: true });
     expect(mockCtx.ui.notify).toHaveBeenCalledWith(expect.stringContaining('HUD Settings:'), 'info');
   });
 

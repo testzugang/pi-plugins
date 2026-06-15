@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { generateGradientHeader, getGradientText, registerHeader } from '../../extensions/pi-tui-hud/header';
-import { readSettings } from '../../extensions/pi-tui-hud/settings';
+import { readEffectiveSettings } from '../../extensions/pi-tui-hud/settings';
 import { visibleWidth } from '@earendil-works/pi-tui';
 
 vi.mock('../../extensions/pi-tui-hud/settings', () => ({
-  readSettings: vi.fn(),
+  readEffectiveSettings: vi.fn(),
   DEFAULT_SETTINGS: {
     enabled: true,
     breadcrumb: 'inner',
@@ -28,6 +28,7 @@ describe('gradient logo header', () => {
     vi.resetAllMocks();
     busHandlers = {};
     mockPi = {
+      getFlag: vi.fn().mockReturnValue(true),
       on: vi.fn().mockImplementation((event, handler) => {
         if (event === 'session_start') {
           sessionStartHandler = handler;
@@ -115,8 +116,25 @@ describe('gradient logo header', () => {
     expect(stripAnsi(rendered)).toBe('SUPERLO...');
   });
 
+  it('should not register header when HUD is forced off by runtime flag', () => {
+    mockPi.getFlag.mockReturnValue(false);
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: false,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    registerHeader(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    expect(readEffectiveSettings).toHaveBeenCalledWith('/mock/cwd', { hudEnabled: false });
+    expect(mockCtx.ui.setHeader).toHaveBeenCalledWith(undefined);
+  });
+
   it('should register and render reactive header lines', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -149,7 +167,7 @@ describe('gradient logo header', () => {
   });
 
   it('should return empty lines if header is disabled at runtime', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -169,7 +187,7 @@ describe('gradient logo header', () => {
     const renderer = headerRendererFactory({}, mockTheme);
 
     // Turn off header dynamically
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
@@ -183,7 +201,7 @@ describe('gradient logo header', () => {
   });
 
   it('should request render when hud_settings_changed is emitted', () => {
-    vi.mocked(readSettings).mockReturnValue({
+    vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
       footer: true,
