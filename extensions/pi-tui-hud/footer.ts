@@ -43,6 +43,28 @@ function isSafeSgr(paramsStr: string): boolean {
   return true;
 }
 
+function sortedStatusEntries(extensionStatuses: ReadonlyMap<string, string>): [string, string][] {
+  return Array.from(extensionStatuses.entries()).sort(([a], [b]) => a.localeCompare(b));
+}
+
+function buildStatusSignature(extensionStatuses: ReadonlyMap<string, string>): string {
+  let signature = `${extensionStatuses.size}|`;
+  for (const [key, value] of extensionStatuses.entries()) {
+    signature += `${key.length}:${key}${value.length}:${value}`;
+  }
+  return signature;
+}
+
+function buildStatusCacheKey(sortedEntries: [string, string][]): string {
+  return JSON.stringify(sortedEntries);
+}
+
+function renderStatusLine(sortedEntries: [string, string][]): string {
+  return sortedEntries
+    .map(([, text]) => sanitizeStatusText(text) + '\x1b[0m') // Append reset to each entry to isolate styles
+    .join('  ');
+}
+
 function sanitizeStatusText(text: string): string {
   // 1. Translate 8-bit C1 controls to 7-bit ESC equivalents to ensure complete payload stripping
   let clean = text
@@ -163,6 +185,9 @@ export function registerFooter(pi: ExtensionAPI) {
     ctx.ui.setFooter((tui: any, theme: any, footerData: any) => {
       liveTui = tui;
       const unsubBranch = footerData.onBranchChange(() => tui.requestRender());
+      let statusCacheKey = '';
+      let statusCacheLine = '';
+      let statusCacheSignature = '';
 
       return {
         render(width: number): string[] {
@@ -229,13 +254,19 @@ export function registerFooter(pi: ExtensionAPI) {
           const lines = [statsLine];
 
           // Line 2: Extension statuses
-          const extensionStatuses = footerData.getExtensionStatuses() as Map<string, string>;
+          const extensionStatuses = footerData.getExtensionStatuses() as ReadonlyMap<string, string>;
           if (extensionStatuses && extensionStatuses.size > 0) {
-            const sorted = Array.from(extensionStatuses.entries())
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([, text]) => sanitizeStatusText(text) + '\x1b[0m'); // Append reset to each entry to isolate styles
-            const statusLine = sorted.join('  ');
-            lines.push(truncateToWidth(statusLine, width, theme.fg('dim', '...')) + '\x1b[0m');
+            const statusSignature = buildStatusSignature(extensionStatuses);
+            if (statusSignature !== statusCacheSignature) {
+              const sorted = sortedStatusEntries(extensionStatuses);
+              const cacheKey = buildStatusCacheKey(sorted);
+              if (cacheKey !== statusCacheKey) {
+                statusCacheKey = cacheKey;
+                statusCacheLine = renderStatusLine(sorted);
+              }
+              statusCacheSignature = statusSignature;
+            }
+            lines.push(truncateToWidth(statusCacheLine, width, theme.fg('dim', '...')) + '\x1b[0m');
           }
 
           return lines;

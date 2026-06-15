@@ -284,6 +284,216 @@ describe('footer registration and rendering', () => {
     expect(lines[1].endsWith('\x1b[0m')).toBe(true);
   });
 
+  it('should inspect status entries for invalidation but reuse cached status line when contents are unchanged', () => {
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    class CountingStatusMap extends Map<string, string> {
+      entriesCalls = 0;
+
+      entries(): MapIterator<[string, string]> {
+        this.entriesCalls += 1;
+        return super.entries();
+      }
+    }
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const statuses = new CountingStatusMap([
+      ['z-ext', 'z status'],
+      ['a-ext', 'a status'],
+    ]);
+    const mockFooterData = {
+      getGitBranch: () => '',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => statuses,
+    };
+
+    const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
+
+    const firstLines = renderer.render(120);
+    const entriesCallsAfterFirstRender = statuses.entriesCalls;
+    const secondLines = renderer.render(120);
+
+    expect(firstLines[1]).toBe(secondLines[1]);
+    expect(entriesCallsAfterFirstRender).toBe(2); // signature + sort on first render
+    expect(statuses.entriesCalls).toBe(entriesCallsAfterFirstRender + 1); // signature only on unchanged render
+  });
+
+  it('should reuse cached sanitized extension status line when status snapshot is unchanged', () => {
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const statuses = new Map([['headroom', 'cache-probe\x1b[31m stable\x1b[39m']]);
+    const mockFooterData = {
+      getGitBranch: () => '',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => statuses,
+    };
+
+    const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
+    const originalReplace = String.prototype.replace;
+    let statusSanitizeCalls = 0;
+    const replaceSpy = vi.spyOn(String.prototype, 'replace').mockImplementation(function (...args: any[]) {
+      if (String(this).includes('cache-probe')) {
+        statusSanitizeCalls += 1;
+      }
+      return originalReplace.apply(this, args as [any, any]);
+    });
+
+    try {
+      const firstLines = renderer.render(120);
+      const callsAfterFirstRender = statusSanitizeCalls;
+      const secondLines = renderer.render(120);
+
+      expect(firstLines[1]).toBe(secondLines[1]);
+      expect(callsAfterFirstRender).toBeGreaterThan(0);
+      expect(statusSanitizeCalls).toBe(callsAfterFirstRender);
+    } finally {
+      replaceSpy.mockRestore();
+    }
+  });
+
+  it('should invalidate cached extension status line when status snapshot changes', () => {
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const statuses = new Map([['headroom', 'cache-probe\x1b[31m stable\x1b[39m']]);
+    const mockFooterData = {
+      getGitBranch: () => '',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => statuses,
+    };
+
+    const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
+    renderer.render(120);
+
+    statuses.set('z-new', 'new-status appeared');
+    const changedLines = renderer.render(120);
+
+    expect(changedLines[1]).toContain('cache-probe\x1b[31m stable\x1b[39m\x1b[0m');
+    expect(changedLines[1]).toContain('new-status appeared\x1b[0m');
+  });
+
+  it('should invalidate cached extension status line when same status Map changes value without changing size', () => {
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const statuses = new Map([['headroom', 'old status']]);
+    const mockFooterData = {
+      getGitBranch: () => '',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => statuses,
+    };
+
+    const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
+    renderer.render(120);
+
+    statuses.set('headroom', 'new status');
+    const changedLines = renderer.render(120);
+
+    expect(changedLines[1]).toContain('new status\x1b[0m');
+    expect(changedLines[1]).not.toContain('old status');
+  });
+
+  it('should invalidate cached extension status line when same status Map changes key without changing size and preserve sorted order', () => {
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const statuses = new Map([
+      ['b-ext', 'B status'],
+      ['z-ext', 'Z status'],
+    ]);
+    const mockFooterData = {
+      getGitBranch: () => '',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => statuses,
+    };
+
+    const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
+    renderer.render(120);
+
+    statuses.delete('z-ext');
+    statuses.set('a-ext', 'A status');
+    const changedLines = renderer.render(120);
+
+    expect(changedLines[1]).toContain('A status\x1b[0m  B status\x1b[0m');
+    expect(changedLines[1]).not.toContain('Z status');
+  });
+
   it('should handle narrow terminal widths safely without overflowing maximum width', () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
