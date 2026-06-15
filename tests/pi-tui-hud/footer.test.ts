@@ -36,6 +36,7 @@ describe('footer registration and rendering', () => {
         }
       }),
       getThinkingLevel: vi.fn().mockReturnValue('med'),
+      events: { on: vi.fn(), emit: vi.fn() },
     };
     mockCtx = {
       cwd: '/mock/cwd',

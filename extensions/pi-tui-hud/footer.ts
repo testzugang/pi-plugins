@@ -104,8 +104,7 @@ export function registerFooter(pi: ExtensionAPI) {
   let liveTui: any = null;
 
   pi.on('session_start', (_event, ctx: ExtensionContext) => {
-    const s = readSettings(ctx.cwd);
-    if (!s.enabled || !s.footer || !ctx.hasUI) return;
+    if (!ctx.hasUI) return;
 
     ctx.ui.setFooter((tui: any, theme: any, footerData: any) => {
       liveTui = tui;
@@ -113,6 +112,11 @@ export function registerFooter(pi: ExtensionAPI) {
 
       return {
         render(width: number): string[] {
+          const s = readSettings(ctx.cwd);
+          if (!s.enabled || !s.footer) {
+            return [];
+          }
+
           // Read git branch
           const branch = footerData.getGitBranch() || '';
           const gitSegment = branch ? theme.fg('success', withIcon('⎇', branch)) : '';
@@ -241,5 +245,11 @@ export function registerFooter(pi: ExtensionAPI) {
 
   pi.on('thinking_level_select', () => {
     liveTui?.requestRender();
+  });
+
+  pi.events.on('hud_settings_changed', (changeCtx) => {
+    if (changeCtx && liveTui) {
+      liveTui.requestRender();
+    }
   });
 }

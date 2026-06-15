@@ -2,9 +2,12 @@ import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { registerEditor } from './editor';
 import { registerHeader } from './header';
 import { registerFooter } from './footer';
-import { readSettings, writeSetting } from './settings';
+import { readSettings, writeSetting, setPiRef } from './settings';
 
 export default function (pi: ExtensionAPI) {
+  // Set global Pi reference for settings flag evaluations
+  setPiRef(pi);
+
   pi.registerFlag('hud', {
     description: 'Enable custom pi-tui-hud status bar, header, and breadcrumbs',
     type: 'boolean',
@@ -16,7 +19,7 @@ export default function (pi: ExtensionAPI) {
   registerFooter(pi);
 
   pi.registerCommand('hud', {
-    description: 'Configure HUD layout and features. Usage: /hud <info|breadcrumb:<mode>|footer:<on|off>|header:<on|off>>',
+    description: 'Configure HUD layout and features. Usage: /hud <info|breadcrumb:<hide|top|inner>|footer:<on|off>|header:<on|off>|header-info:<on|off>>',
     handler: async (args, ctx) => {
       const arg = args?.trim().toLowerCase();
 
@@ -46,7 +49,7 @@ export default function (pi: ExtensionAPI) {
 
       const colonIdx = arg.indexOf(':');
       if (colonIdx === -1) {
-        ctx.ui.notify('Invalid command format. Use /hud <info|breadcrumb:top|inner|hide|footer:on|off>', 'error');
+        ctx.ui.notify('Invalid command format. Use /hud <info|breadcrumb:<hide|top|inner>|footer:<on|off>|header:<on|off>|header-info:<on|off>>', 'error');
         return;
       }
 
