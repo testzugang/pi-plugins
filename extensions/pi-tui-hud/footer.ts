@@ -1,5 +1,5 @@
 import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
-import { readSettings } from './settings';
+import { readSettings, DEFAULT_SETTINGS } from './settings';
 import { withIcon } from './utils';
 import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
 
@@ -103,9 +103,12 @@ export function registerFooter(pi: ExtensionAPI) {
   let liveUsage: any = null;
   let liveTui: any = null;
   let unsubSettings: (() => void) | null = null;
+  let cachedSettings = DEFAULT_SETTINGS;
+  let footerEnabled = false;
 
-  pi.on('session_start', (_event, ctx: ExtensionContext) => {
-    if (!ctx.hasUI) return;
+  function enable(ctx: ExtensionContext) {
+    footerEnabled = true;
+    cachedSettings = readSettings(ctx.cwd);
 
     ctx.ui.setFooter((tui: any, theme: any, footerData: any) => {
       liveTui = tui;
@@ -113,8 +116,8 @@ export function registerFooter(pi: ExtensionAPI) {
 
       return {
         render(width: number): string[] {
-          const s = readSettings(ctx.cwd);
-          if (!s.enabled || !s.footer) {
+          // Double-check active state using cached config without I/O
+          if (!cachedSettings.enabled || !cachedSettings.footer) {
             return [];
           }
 
@@ -224,14 +227,40 @@ export function registerFooter(pi: ExtensionAPI) {
         }
       };
     });
+  }
+
+  function disable(ctx: ExtensionContext) {
+    footerEnabled = false;
+    liveTui = null;
+    if (ctx.hasUI && ctx.ui) {
+      ctx.ui.setFooter(undefined);
+    }
+  }
+
+  pi.on('session_start', (_event, ctx: ExtensionContext) => {
+    const s = readSettings(ctx.cwd);
+    if (s.enabled && s.footer) {
+      enable(ctx);
+    } else {
+      disable(ctx);
+    }
 
     if (unsubSettings) {
       unsubSettings();
     }
 
     unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
-      if (changeCtx && liveTui) {
-        liveTui.requestRender();
+      if (!changeCtx || typeof changeCtx !== 'object' || !('cwd' in changeCtx)) return;
+      
+      const updatedSettings = readSettings(changeCtx.cwd);
+      cachedSettings = updatedSettings;
+
+      if (updatedSettings.enabled && updatedSettings.footer && !footerEnabled) {
+        enable(changeCtx);
+      } else if ((!updatedSettings.enabled || !updatedSettings.footer) && footerEnabled) {
+        disable(changeCtx);
+      } else if (footerEnabled) {
+        liveTui?.requestRender();
       }
     });
   });
@@ -258,7 +287,10 @@ export function registerFooter(pi: ExtensionAPI) {
     liveTui?.requestRender();
   });
 
-  pi.on('session_shutdown', () => {
+  pi.on('session_shutdown', (_event, ctx) => {
+    if (footerEnabled) {
+      disable(ctx);
+    }
     if (unsubSettings) {
       unsubSettings();
       unsubSettings = null;
