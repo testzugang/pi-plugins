@@ -136,6 +136,8 @@ type UsageTotals = {
   cost: number;
 };
 
+type LiveUsageSnapshot = UsageTotals;
+
 function emptyUsageTotals(): UsageTotals {
   return { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 };
 }
@@ -151,6 +153,19 @@ function addUsage(totals: UsageTotals, usage: any): UsageTotals {
   };
 }
 
+function liveUsageSnapshot(usage: any): LiveUsageSnapshot {
+  return addUsage(emptyUsageTotals(), usage);
+}
+
+function sameLiveUsageSnapshot(a: LiveUsageSnapshot | null, b: LiveUsageSnapshot): boolean {
+  return !!a
+    && a.input === b.input
+    && a.output === b.output
+    && a.cacheRead === b.cacheRead
+    && a.cacheWrite === b.cacheWrite
+    && a.cost === b.cost;
+}
+
 function collectAssistantUsage(ctx: ExtensionContext): UsageTotals {
   let totals = emptyUsageTotals();
   for (const entry of ctx.sessionManager.getEntries()) {
@@ -164,6 +179,7 @@ function collectAssistantUsage(ctx: ExtensionContext): UsageTotals {
 export function registerFooter(pi: ExtensionAPI) {
   let isStreaming = false;
   let liveUsage: any = null;
+  let lastLiveUsageSnapshot: LiveUsageSnapshot | null = null;
   let liveTui: any = null;
   let unsubSettings: (() => void) | null = null;
   let cachedSettings = DEFAULT_SETTINGS;
@@ -324,13 +340,18 @@ export function registerFooter(pi: ExtensionAPI) {
   pi.on('agent_start', () => {
     isStreaming = true;
     liveUsage = null;
+    lastLiveUsageSnapshot = null;
     liveTui?.requestRender();
   });
 
   pi.on('message_update', (event) => {
     if (isStreaming && event?.message?.usage) {
+      const snapshot = liveUsageSnapshot(event.message.usage);
       liveUsage = event.message.usage;
-      liveTui?.requestRender();
+      if (!sameLiveUsageSnapshot(lastLiveUsageSnapshot, snapshot)) {
+        lastLiveUsageSnapshot = snapshot;
+        liveTui?.requestRender();
+      }
     }
   });
 
@@ -342,6 +363,7 @@ export function registerFooter(pi: ExtensionAPI) {
       cumulativeUsage = collectAssistantUsage(activeCtx);
     }
     liveUsage = null;
+    lastLiveUsageSnapshot = null;
     liveTui?.requestRender();
   });
 

@@ -653,4 +653,201 @@ describe('footer registration and rendering', () => {
     sessionShutdownHandler({}, mockCtx);
     expect(unsubMock).toHaveBeenCalled();
   });
+
+  it('should dedupe repeated identical live usage render requests during streaming', () => {
+    let agentStartHandler: Function = () => {};
+    let messageUpdateHandler: Function = () => {};
+
+    mockPi.on.mockImplementation((event: string, handler: Function) => {
+      if (event === 'session_start') {
+        sessionStartHandler = handler;
+      } else if (event === 'agent_start') {
+        agentStartHandler = handler;
+      } else if (event === 'message_update') {
+        messageUpdateHandler = handler;
+      }
+    });
+
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const mockFooterData = {
+      getGitBranch: () => 'main',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => new Map(),
+    };
+    footerRendererFactory(mockTui, mockTheme, mockFooterData);
+
+    agentStartHandler();
+    mockTui.requestRender.mockClear();
+
+    const usage = { input: 2000, output: 1000, cacheRead: 10, cacheWrite: 5, cost: { total: 0.05 } };
+    messageUpdateHandler({ message: { usage } });
+    messageUpdateHandler({ message: { usage: { ...usage, cost: { total: 0.05 } } } });
+
+    expect(mockTui.requestRender).toHaveBeenCalledTimes(1);
+  });
+
+  it('should request another render when live usage values change during streaming', () => {
+    let agentStartHandler: Function = () => {};
+    let messageUpdateHandler: Function = () => {};
+
+    mockPi.on.mockImplementation((event: string, handler: Function) => {
+      if (event === 'session_start') {
+        sessionStartHandler = handler;
+      } else if (event === 'agent_start') {
+        agentStartHandler = handler;
+      } else if (event === 'message_update') {
+        messageUpdateHandler = handler;
+      }
+    });
+
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const mockFooterData = {
+      getGitBranch: () => 'main',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => new Map(),
+    };
+    footerRendererFactory(mockTui, mockTheme, mockFooterData);
+
+    agentStartHandler();
+    mockTui.requestRender.mockClear();
+
+    messageUpdateHandler({ message: { usage: { input: 2000, output: 1000, cost: { total: 0.05 } } } });
+    messageUpdateHandler({ message: { usage: { input: 2000, output: 1001, cost: { total: 0.05 } } } });
+
+    expect(mockTui.requestRender).toHaveBeenCalledTimes(2);
+  });
+
+  it('should not request render for message_update usage outside streaming', () => {
+    let messageUpdateHandler: Function = () => {};
+
+    mockPi.on.mockImplementation((event: string, handler: Function) => {
+      if (event === 'session_start') {
+        sessionStartHandler = handler;
+      } else if (event === 'message_update') {
+        messageUpdateHandler = handler;
+      }
+    });
+
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const mockFooterData = {
+      getGitBranch: () => 'main',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => new Map(),
+    };
+    footerRendererFactory(mockTui, mockTheme, mockFooterData);
+
+    messageUpdateHandler({ message: { usage: { input: 2000, output: 1000, cost: { total: 0.05 } } } });
+
+    expect(mockTui.requestRender).not.toHaveBeenCalled();
+  });
+
+  it('should reset live usage dedupe after message_end so same usage can render in a later stream', () => {
+    let agentStartHandler: Function = () => {};
+    let messageUpdateHandler: Function = () => {};
+    let messageEndHandler: Function = () => {};
+
+    mockPi.on.mockImplementation((event: string, handler: Function) => {
+      if (event === 'session_start') {
+        sessionStartHandler = handler;
+      } else if (event === 'agent_start') {
+        agentStartHandler = handler;
+      } else if (event === 'message_update') {
+        messageUpdateHandler = handler;
+      } else if (event === 'message_end') {
+        messageEndHandler = handler;
+      }
+    });
+
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const mockFooterData = {
+      getGitBranch: () => 'main',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => new Map(),
+    };
+    footerRendererFactory(mockTui, mockTheme, mockFooterData);
+
+    const usage = { input: 2000, output: 1000, cost: { total: 0.05 } };
+
+    agentStartHandler();
+    mockTui.requestRender.mockClear();
+    messageUpdateHandler({ message: { usage } });
+    expect(mockTui.requestRender).toHaveBeenCalledTimes(1);
+
+    messageEndHandler({ message: { usage } });
+    expect(mockTui.requestRender).toHaveBeenCalledTimes(2);
+
+    agentStartHandler();
+    mockTui.requestRender.mockClear();
+    messageUpdateHandler({ message: { usage } });
+
+    expect(mockTui.requestRender).toHaveBeenCalledTimes(1);
+  });
 });
