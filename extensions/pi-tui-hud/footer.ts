@@ -49,6 +49,8 @@ function sanitizeStatusText(text: string): string {
     .replace(/\u009b/g, '\x1b[')
     .replace(/\u009d/g, '\x1b]')
     .replace(/\u0090/g, '\x1bP')
+    .replace(/\u009e/g, '\x1b^')
+    .replace(/\u009f/g, '\x1b_')
     .replace(/\u009c/g, '\x1b\\');
 
   const sgrCodes: string[] = [];
@@ -69,8 +71,8 @@ function sanitizeStatusText(text: string): string {
   // 4. Strip OSC sequences safely even if incomplete (supports embedded ESCs except ST, stops at next \x1b or end of string if no BEL/ST)
   clean = clean.replace(/\x1b\](?:[^\x07\x1b]|\x1b[^\\])*(?:\x07|\x1b\\)?/g, '');
 
-  // 5. Strip DCS sequences safely (Device Control String, starts with \x1bP and ends with \x1b\ or \u009c, supports embedded ESCs except ST)
-  clean = clean.replace(/\x1bP(?:[^\x1b]|\x1b[^\\])*(?:\x1b\\)?/g, '');
+  // 5. Strip DCS, SOS, PM, APC sequences (starts with ESC followed by [PX^_] and ends with ESC \) including arbitrary length payload
+  clean = clean.replace(/\x1b[PX^_](?:[^\x1b]|\x1b[^\\])*(?:\x1b\\)?/g, '');
 
   // 6. Strip all other ESC sequences (SS2, SS3, charsets, etc.)
   clean = clean.replace(/\x1b[\x20-\x2f]*[\x30-\x7e]/g, '');
@@ -147,8 +149,7 @@ export function registerFooter(pi: ExtensionAPI) {
             ratio = contextUsage.percent;
             pctStr = `${ratio.toFixed(1)}%/${formatTokenCount(maxWindow)}`;
           } else {
-            // Plan-aligned fallback: Calculate ratio from cumulative + live totals only when contextUsage is missing
-            // If contextUsage explicitly exists but tokens/percent are null, it represents a compacted state (return null/unknown)
+            // Plan-aligned fallback: Calculate ratio from cumulative + live totals when contextUsage tokens are missing
             const tokens = contextUsage ? contextUsage.tokens : (totalInput + totalOutput + totalCacheRead);
             if (typeof tokens === 'number') {
               ratio = maxWindow > 0 ? (tokens / maxWindow) * 100 : 0;
