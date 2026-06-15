@@ -62,10 +62,13 @@ function sanitizeStatusText(text: string): string {
   // 3. Strip OSC sequences safely even if incomplete (stops at next \x1b or end of string if no BEL/ST)
   clean = clean.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?/g, '');
 
-  // 4. Strip all other ESC sequences (DCS, SS2, SS3, charsets, etc.)
+  // 4. Strip DCS sequences (Device Control String, starts with \x1bP and ends with \x1b\ or \u009c) including arbitrary length payload
+  clean = clean.replace(/\x1bP[^\x1b\u009c]*(?:\x1b\\|\u009c)?/g, '');
+
+  // 5. Strip all other ESC sequences (SS2, SS3, charsets, etc.)
   clean = clean.replace(/\x1b[\x20-\x2f]*[\x30-\x7e]/g, '');
 
-  // 5. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f, and C1 8-bit controls 0x80-0x9f) including tab (0x09)
+  // 6. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f, and C1 8-bit controls 0x80-0x9f) including tab (0x09)
   clean = clean.replace(/\x1b/g, ' ');
   clean = clean.replace(/[\x00-\x09\x0a-\x1a\x1c-\x1f\x7f\x80-\x9f]/g, ' ');
 
@@ -136,11 +139,16 @@ export function registerFooter(pi: ExtensionAPI) {
           if (contextUsage && typeof contextUsage.percent === 'number') {
             ratio = contextUsage.percent;
             pctStr = `${ratio.toFixed(1)}%/${formatTokenCount(maxWindow)}`;
-          } else if (contextUsage && typeof contextUsage.tokens === 'number') {
-            ratio = maxWindow > 0 ? (contextUsage.tokens / maxWindow) * 100 : 0;
-            pctStr = `${ratio.toFixed(1)}%/${formatTokenCount(maxWindow)}`;
           } else {
-            pctStr = `?%/${formatTokenCount(maxWindow)}`;
+            // Plan-aligned fallback: Calculate ratio from cumulative + live totals only when contextUsage is missing
+            // If contextUsage explicitly exists but tokens/percent are null, it represents a compacted state (return null/unknown)
+            const tokens = contextUsage ? contextUsage.tokens : (totalInput + totalOutput + totalCacheRead);
+            if (typeof tokens === 'number') {
+              ratio = maxWindow > 0 ? (tokens / maxWindow) * 100 : 0;
+              pctStr = `${ratio.toFixed(1)}%/${formatTokenCount(maxWindow)}`;
+            } else {
+              pctStr = `?%/${formatTokenCount(maxWindow)}`;
+            }
           }
 
           if (ratio !== null) {

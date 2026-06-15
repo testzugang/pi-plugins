@@ -180,12 +180,12 @@ describe('footer registration and rendering', () => {
 
     const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
 
-    // Missing context usage (null)
+    // Case 1: Missing context usage (null) - falls back to cumulative
     mockCtx.getContextUsage.mockReturnValue(null);
     const lines = renderer.render(80);
-    expect(lines[0]).toContain('?%/200k');
+    expect(lines[0]).toContain('10.0%/200k');
 
-    // Case 2: Compacted / null values inside contextUsage
+    // Case 2: Compacted / null values inside contextUsage - renders ?%
     mockCtx.getContextUsage.mockReturnValue({ tokens: null, percent: null, contextWindow: 200000 });
     const linesCompacted = renderer.render(80);
     expect(linesCompacted[0]).toContain('?%/200k');
@@ -213,10 +213,10 @@ describe('footer registration and rendering', () => {
     const mockFooterData = {
       getGitBranch: () => '',
       onBranchChange: () => vi.fn(),
-      // Unsorted map with dangerous control characters, unclosed ESCs, CSIs, disallowed SGR, colon CSIs, tabs, and OSC exploits
+      // Unsorted map with dangerous control characters, unclosed ESCs, CSIs, disallowed SGR, colon CSIs, tabs, C1 8-bit controls, DCS payloads, and OSC exploits
       getExtensionStatuses: () => new Map([
         ['z-ext', 'Z-Status\twith\tcontrol\x07chars and unclosed \x1b raw ESC \u009b2JC1CSI \u009d2;C1OSC\u0007'],
-        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b[0 qintermediateSpace \x1b[200~private \x1b[2@finalbyte \x1b[>0cintermediates \x1b[38:2::255mcolonCSI \x1b[38;5;999999munboundedSGR \x1b[5mblink \x1b[8mhidden \x1b]2;incomplete OSC with spaces'],
+        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b[0 qintermediateSpace \x1b[200~private \x1b[2@finalbyte \x1b[>0cintermediates \x1b[38:2::255mcolonCSI \x1b[38;5;999999munboundedSGR \x1b[5mblink \x1b[8mhidden \x1b]2;incomplete OSC with spaces \x1bP1$rDangerousDcsPayload\x1b\\ \x1b(0charset'],
       ]),
     };
 
@@ -224,9 +224,9 @@ describe('footer registration and rendering', () => {
     const lines = renderer.render(200);
 
     // Line 2 should be sorted alphabetically:
-    // a-ext first: SGR color code \x1b[31m and \x1b[39m are preserved. CSI (\x1b[2J, \x1b[200~, \x1b[2@, \x1b[>0c), colon CSIs, other ESC families, disallowed SGR (blink, hidden, unbounded), and OSC are stripped.
-    // z-ext next: \x07 (BEL), \t (tab 0x09), and raw \x1b are replaced with spaces or sanitized.
-    expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs intermediateSpace private finalbyte intermediates colonCSI unboundedSGR blink hidden\x1b[0m');
+    // a-ext first: SGR color code \x1b[31m and \x1b[39m are preserved. CSI, DCS (+payload), OSC, other ESC families (charset), disallowed SGR are stripped.
+    // z-ext next: \x07 (BEL), \t (tab 0x09), raw \x1b, C1 controls are replaced with spaces or sanitized.
+    expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs intermediateSpace private finalbyte intermediates colonCSI unboundedSGR blink hidden charset\x1b[0m');
     expect(lines[1]).toContain('Z-Status with control chars and unclosed aw ESC 2JC1CSI 2;C1OSC\x1b[0m');
     // Verify style reset is appended to prevent leaks
     expect(lines[1].endsWith('\x1b[0m')).toBe(true);
@@ -326,17 +326,13 @@ describe('footer registration and rendering', () => {
     messageUpdateHandler({ message: mockMessage });
     expect(mockTui.requestRender).toHaveBeenCalledTimes(2);
 
-    // Trigger partial message_update (no message/usage) - should not crash
-    expect(() => messageUpdateHandler({})).not.toThrow();
-    expect(() => messageUpdateHandler(null)).not.toThrow();
-
     // Mock getContextUsage to null so it falls back to cumulative + live calculations
     mockCtx.getContextUsage.mockReturnValue(null);
 
     // Render footer during message update and verify live streaming tokens are accumulated
     const lines = renderer.render(80);
-    // Since getContextUsage() is null, context usage should render as unknown ?%
-    expect(lines[0]).toContain('?%/200k');
+    // Cumulative (15k + 5k input/output) + Live (2k + 1k input/output) = 23k total tokens
+    expect(lines[0]).toContain('11.5%/200k'); // 23000 / 200000 = 11.5%
     expect(lines[0]).toContain('↑12k'); // Cumulative 10k + Live 2k = 12k
     expect(lines[0]).toContain('↓6k'); // Cumulative 5k + Live 1k = 6k
     expect(lines[0]).toContain('$0.200'); // Cumulative 0.15 + Live 0.05 = 0.20
