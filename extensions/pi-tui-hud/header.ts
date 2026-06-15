@@ -1,6 +1,7 @@
-import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
+import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
 import { truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
-import { readSettings } from './settings';
+import { readSettings, DEFAULT_SETTINGS } from './settings';
+import { sanitizePlainText } from './breadcrumb';
 
 function parseHex(hex: string): { r: number; g: number; b: number } | null {
   const clean = hex.startsWith('#') ? hex.slice(1) : hex;
@@ -49,23 +50,29 @@ export function registerHeader(pi: ExtensionAPI) {
   let liveTui: any = null;
   let unsubSettings: (() => void) | null = null;
   let headerEnabled = false;
+  let cachedSettings = DEFAULT_SETTINGS;
 
-  function enable(ctx: any) {
+  function enable(ctx: ExtensionContext) {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
     headerEnabled = true;
+    cachedSettings = readSettings(ctx.cwd);
 
     ctx.ui.setHeader((_tui: any, theme: any) => {
       liveTui = _tui;
       return {
         render(width: number): string[] {
-          const currentSettings = readSettings(ctx.cwd);
+          // Read from cached config without FS I/O on hot path
+          if (!cachedSettings.enabled || !cachedSettings.header) {
+            return [];
+          }
           const infoLines: string[] = [generateGradientHeader('PI-TUI-HUD', width)];
-          if (currentSettings['header-info']) {
-            const rawInfo = ` Model: ${ctx.model?.id || 'unknown'} | CWD: ${ctx.cwd}`;
+          if (cachedSettings['header-info']) {
+            const rawInfo = ` Model: ${sanitizePlainText(ctx.model?.id || 'unknown')} | CWD: ${sanitizePlainText(ctx.cwd)}`;
             infoLines.push(truncateToWidth(theme.fg('dim', rawInfo), width, '...'));
           }
           return infoLines;
         },
+        invalidate() {}, // Fully compliant with Component interface
       };
     });
   }
@@ -96,6 +103,8 @@ export function registerHeader(pi: ExtensionAPI) {
       if (!changeCtx || !changeCtx.hasUI || !changeCtx.ui) return;
       
       const updatedSettings = readSettings(changeCtx.cwd);
+      cachedSettings = updatedSettings;
+
       if (updatedSettings.enabled && updatedSettings.header && !headerEnabled) {
         enable(changeCtx);
       } else if ((!updatedSettings.enabled || !updatedSettings.header) && headerEnabled) {

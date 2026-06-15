@@ -5,6 +5,13 @@ import { visibleWidth } from '@earendil-works/pi-tui';
 
 vi.mock('../../extensions/pi-tui-hud/settings', () => ({
   readSettings: vi.fn(),
+  DEFAULT_SETTINGS: {
+    enabled: true,
+    breadcrumb: 'inner',
+    footer: true,
+    header: true,
+    'header-info': false,
+  },
 }));
 
 function stripAnsi(text: string): string {

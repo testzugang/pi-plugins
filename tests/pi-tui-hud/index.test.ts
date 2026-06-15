@@ -141,6 +141,25 @@ describe('index extension registration and commands', () => {
     expect(mockCtx.ui.notify).toHaveBeenCalledWith(expect.stringContaining('Invalid command format.'), 'error');
   });
 
+  it('should catch writeSetting errors and notify the user with a friendly error message', async () => {
+    vi.mocked(readSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+    // Force writeSetting to throw
+    vi.mocked(writeSetting).mockImplementation(() => {
+      throw new Error('Disk full');
+    });
+
+    hudExtension(mockPi as any);
+    await hudCommand.handler('', mockCtx);
+
+    expect(mockCtx.ui.notify).toHaveBeenCalledWith('Failed to save HUD settings: Disk full', 'error');
+  });
+
   it('should return early and not crash if called in headless mode (no UI)', async () => {
     const headlessCtx = { cwd: '/mock/cwd', hasUI: false };
     hudExtension(mockPi as any);

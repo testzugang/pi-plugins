@@ -33,10 +33,14 @@ export default function (pi: ExtensionAPI) {
 
         const config = readSettings(ctx.cwd);
         const next = !config.enabled;
-        writeSetting(ctx.cwd, 'enabled', next);
-
-        pi.events.emit('hud_settings_changed', ctx);
-        ctx.ui.notify(`HUD enabled → ${next ? 'on' : 'off'}`, 'info');
+        
+        try {
+          writeSetting(ctx.cwd, 'enabled', next);
+          pi.events.emit('hud_settings_changed', ctx);
+          ctx.ui.notify(`HUD enabled → ${next ? 'on' : 'off'}`, 'info');
+        } catch (err) {
+          ctx.ui.notify(`Failed to save HUD settings: ${err instanceof Error ? err.message : String(err)}`, 'error');
+        }
         return;
       }
 
@@ -69,9 +73,13 @@ export default function (pi: ExtensionAPI) {
           ctx.ui.notify('Breadcrumb mode must be: hide, top, or inner', 'warning');
           return;
         }
-        writeSetting(ctx.cwd, 'breadcrumb', val as 'hide' | 'top' | 'inner');
-        pi.events.emit('hud_settings_changed', ctx);
-        ctx.ui.notify(`Breadcrumb set to: ${val}`, 'info');
+        try {
+          writeSetting(ctx.cwd, 'breadcrumb', val as 'hide' | 'top' | 'inner');
+          pi.events.emit('hud_settings_changed', ctx);
+          ctx.ui.notify(`Breadcrumb set to: ${val}`, 'info');
+        } catch (err) {
+          ctx.ui.notify(`Failed to save HUD settings: ${err instanceof Error ? err.message : String(err)}`, 'error');
+        }
         return;
       }
 
@@ -81,9 +89,13 @@ export default function (pi: ExtensionAPI) {
           return;
         }
         const state = val === 'on';
-        writeSetting(ctx.cwd, key, state);
-        pi.events.emit('hud_settings_changed', ctx);
-        ctx.ui.notify(`${key} turned ${val}`, 'info');
+        try {
+          writeSetting(ctx.cwd, key, state);
+          pi.events.emit('hud_settings_changed', ctx);
+          ctx.ui.notify(`${key} turned ${val}`, 'info');
+        } catch (err) {
+          ctx.ui.notify(`Failed to save HUD settings: ${err instanceof Error ? err.message : String(err)}`, 'error');
+        }
         return;
       }
 

@@ -220,6 +220,7 @@ export function registerFooter(pi: ExtensionAPI) {
 
           return lines;
         },
+        invalidate() {},
         dispose() {
           if (liveTui === tui) {
             liveTui = null;
