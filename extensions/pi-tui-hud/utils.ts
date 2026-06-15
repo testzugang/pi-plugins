@@ -30,13 +30,22 @@ export function withIcon(icon: string, text: string): string {
   return icon ? `${icon} ${text}` : text;
 }
 
-export function hexFg(hex: string, text: string): string {
+export function parseHex(hex: string): { r: number; g: number; b: number } | null {
   const cleanHex = hex.startsWith('#') ? hex.slice(1) : hex;
   if (!/^[0-9a-fA-F]{6}$/.test(cleanHex)) {
+    return null;
+  }
+  return {
+    r: parseInt(cleanHex.substring(0, 2), 16),
+    g: parseInt(cleanHex.substring(2, 4), 16),
+    b: parseInt(cleanHex.substring(4, 6), 16),
+  };
+}
+
+export function hexFg(hex: string, text: string): string {
+  const color = parseHex(hex);
+  if (!color) {
     return text;
   }
-  const r = parseInt(cleanHex.substring(0, 2), 16);
-  const g = parseInt(cleanHex.substring(2, 4), 16);
-  const b = parseInt(cleanHex.substring(4, 6), 16);
-  return `\x1b[38;2;${r};${g};${b}m${text}\x1b[39m`;
+  return `\x1b[38;2;${color.r};${color.g};${color.b}m${text}\x1b[39m`;
 }

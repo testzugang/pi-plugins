@@ -61,14 +61,20 @@ describe('gradient logo header', () => {
     vi.restoreAllMocks();
   });
 
-  it('should generate gradient text colors correctly', () => {
+  it('should generate gradient text colors correctly from shared hex parser semantics', () => {
     const text = 'AB';
-    const gradient = getGradientText(text, '#ff0000', '#0000ff');
+    const gradient = getGradientText(text, '#ff0000', '0000ff');
     
     // First letter 'A' should be exactly pure red: #ff0000 -> rgb(255, 0, 0)
     expect(gradient).toContain('\x1b[38;2;255;0;0mA');
     // Second letter 'B' should be exactly pure blue: #0000ff -> rgb(0, 0, 255)
     expect(gradient).toContain('\x1b[38;2;0;0;255mB');
+  });
+
+  it('should return plain text when gradient hex colors are invalid', () => {
+    expect(getGradientText('AB', 'invalid', '#0000ff')).toBe('AB');
+    expect(getGradientText('AB', '#ff0000', '123')).toBe('AB');
+    expect(getGradientText('AB', '#ff0000', 'ff#ffff')).toBe('AB');
   });
 
   it('should handle astral Unicode surrogate pairs safely without splitting', () => {

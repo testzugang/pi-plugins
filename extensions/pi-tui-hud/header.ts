@@ -2,17 +2,7 @@ import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-a
 import { truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
 import { readSettings, DEFAULT_SETTINGS } from './settings';
 import { sanitizePlainText } from './breadcrumb';
-import { isExtensionContext } from './utils';
-
-function parseHex(hex: string): { r: number; g: number; b: number } | null {
-  const clean = hex.startsWith('#') ? hex.slice(1) : hex;
-  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return null;
-  return {
-    r: parseInt(clean.substring(0, 2), 16),
-    g: parseInt(clean.substring(2, 4), 16),
-    b: parseInt(clean.substring(4, 6), 16),
-  };
-}
+import { isExtensionContext, parseHex } from './utils';
 
 export function getGradientText(text: string, startHex: string, endHex: string): string {
   const start = parseHex(startHex);

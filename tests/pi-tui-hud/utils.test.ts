@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { withIcon, hexFg, hasNerdFonts } from '../../extensions/pi-tui-hud/utils';
+import { withIcon, hexFg, hasNerdFonts, parseHex } from '../../extensions/pi-tui-hud/utils';
 
 describe('utility functions', () => {
   afterEach(() => {
@@ -16,9 +16,23 @@ describe('utility functions', () => {
     expect(result).toBe('Launch');
   });
 
+  it('should parse shared six-digit hex colors with or without leading hash', () => {
+    expect(parseHex('#ffffff')).toEqual({ r: 255, g: 255, b: 255 });
+    expect(parseHex('0000ff')).toEqual({ r: 0, g: 0, b: 255 });
+  });
+
+  it('should reject invalid shared hex color inputs', () => {
+    expect(parseHex('invalid')).toBeNull();
+    expect(parseHex('123')).toBeNull();
+    expect(parseHex('ff#ffff')).toBeNull();
+  });
+
   it('should wrap text in raw hex foreground escape codes', () => {
     const colored = hexFg('#ffffff', 'text');
     expect(colored).toBe('\x1b[38;2;255;255;255mtext\x1b[39m');
+
+    const hashless = hexFg('0000ff', 'text');
+    expect(hashless).toBe('\x1b[38;2;0;0;255mtext\x1b[39m');
   });
 
   it('should fallback to plain text if hex is invalid', () => {
