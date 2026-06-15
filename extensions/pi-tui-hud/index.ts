@@ -21,6 +21,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand('hud', {
     description: 'Configure HUD layout and features. Usage: /hud <info|breadcrumb:<hide|top|inner>|footer:<on|off>|header:<on|off>|header-info:<on|off>>',
     handler: async (args, ctx) => {
+      if (!ctx || !ctx.hasUI || !ctx.ui) return;
       const arg = args?.trim().toLowerCase();
 
       if (!arg) {

@@ -107,6 +107,7 @@ export function registerFooter(pi: ExtensionAPI) {
   let footerEnabled = false;
 
   function enable(ctx: ExtensionContext) {
+    if (!ctx || !ctx.hasUI || !ctx.ui) return;
     footerEnabled = true;
     cachedSettings = readSettings(ctx.cwd);
 
@@ -232,7 +233,7 @@ export function registerFooter(pi: ExtensionAPI) {
   function disable(ctx: ExtensionContext) {
     footerEnabled = false;
     liveTui = null;
-    if (ctx.hasUI && ctx.ui) {
+    if (ctx && ctx.hasUI && ctx.ui) {
       ctx.ui.setFooter(undefined);
     }
   }

@@ -35,6 +35,7 @@ describe('index extension registration and commands', () => {
     };
     mockCtx = {
       cwd: '/mock/cwd',
+      hasUI: true,
       ui: {
         notify: vi.fn(),
       }
@@ -138,5 +139,13 @@ describe('index extension registration and commands', () => {
     await hudCommand.handler('invalid-no-colon', mockCtx);
 
     expect(mockCtx.ui.notify).toHaveBeenCalledWith(expect.stringContaining('Invalid command format.'), 'error');
+  });
+
+  it('should return early and not crash if called in headless mode (no UI)', async () => {
+    const headlessCtx = { cwd: '/mock/cwd', hasUI: false };
+    hudExtension(mockPi as any);
+    
+    await expect(hudCommand.handler('info', headlessCtx)).resolves.not.toThrow();
+    expect(writeSetting).not.toHaveBeenCalled();
   });
 });
