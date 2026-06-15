@@ -97,7 +97,7 @@ export function registerEditor(pi: ExtensionAPI) {
   }
 
   pi.on('session_start', (_event, ctx) => {
-    if (!ctx.hasUI || !ctx.ui) return;
+    if (!ctx || !ctx.hasUI || !ctx.ui) return;
     
     const s = readSettings(ctx.cwd);
     if (s.enabled) {
@@ -139,7 +139,7 @@ export function registerEditor(pi: ExtensionAPI) {
   });
 
   pi.on('model_select', (_event, ctx) => {
-    if (!ctx.hasUI || !ctx.ui) return;
+    if (!ctx || !ctx.hasUI || !ctx.ui) return;
     if (editorEnabled) {
       liveCtx = ctx;
       breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
@@ -149,6 +149,7 @@ export function registerEditor(pi: ExtensionAPI) {
   });
 
   pi.on('session_shutdown', (_event, ctx) => {
+    if (!ctx) return;
     if (editorEnabled) {
       disable(ctx);
     }

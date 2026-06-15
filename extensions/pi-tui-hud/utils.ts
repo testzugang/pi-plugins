@@ -12,7 +12,11 @@ export function isExtensionContext(val: unknown): val is ExtensionContext {
     'ui' in val &&
     typeof (val as any).ui === 'object' &&
     (val as any).ui !== null &&
-    'theme' in (val as any).ui
+    'theme' in (val as any).ui &&
+    typeof (val as any).ui.setHeader === 'function' &&
+    typeof (val as any).ui.setFooter === 'function' &&
+    typeof (val as any).ui.setEditorComponent === 'function' &&
+    typeof (val as any).ui.setWidget === 'function'
   );
 }
 

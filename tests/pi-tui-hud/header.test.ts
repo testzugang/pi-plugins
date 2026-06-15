@@ -46,6 +46,9 @@ describe('gradient logo header', () => {
       hasUI: true,
       ui: {
         setHeader: vi.fn(),
+        setFooter: vi.fn(),
+        setEditorComponent: vi.fn(),
+        setWidget: vi.fn(),
         theme: {
           fg: (token: string, text: string) => `[${token}]${text}`,
         },

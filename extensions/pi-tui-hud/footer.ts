@@ -240,7 +240,7 @@ export function registerFooter(pi: ExtensionAPI) {
   }
 
   pi.on('session_start', (_event, ctx: ExtensionContext) => {
-    if (!ctx.hasUI || !ctx.ui) return;
+    if (!ctx || !ctx.hasUI || !ctx.ui) return;
 
     const s = readSettings(ctx.cwd);
     if (s.enabled && s.footer) {
@@ -292,6 +292,7 @@ export function registerFooter(pi: ExtensionAPI) {
   });
 
   pi.on('session_shutdown', (_event, ctx) => {
+    if (!ctx) return;
     if (footerEnabled) {
       disable(ctx);
     }

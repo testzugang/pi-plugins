@@ -50,6 +50,9 @@ describe('footer registration and rendering', () => {
       hasUI: true,
       ui: {
         setFooter: vi.fn(),
+        setHeader: vi.fn(),
+        setEditorComponent: vi.fn(),
+        setWidget: vi.fn(),
       },
       model: { contextWindow: 200000 },
       getContextUsage: vi.fn().mockReturnValue({ tokens: 15000, contextWindow: 200000 }),

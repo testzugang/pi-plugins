@@ -41,6 +41,8 @@ describe('editor registration and lifecycle', () => {
         },
         setEditorComponent: vi.fn(),
         setWidget: vi.fn(),
+        setHeader: vi.fn(),
+        setFooter: vi.fn(),
       },
       model: { id: 'claude-3-5', name: 'Claude 3.5' },
     };
