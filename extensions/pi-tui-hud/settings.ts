@@ -107,10 +107,6 @@ export function writeSetting<K extends keyof HudSettings>(
 
   current[key] = value as never;
 
-  try {
-    mkdirSync(localDir, { recursive: true });
-    writeFileSync(localPath, JSON.stringify(current, null, 2), 'utf8');
-  } catch (error) {
-    console.warn(`Could not write HUD settings to ${localPath}:`, error);
-  }
+  mkdirSync(localDir, { recursive: true });
+  writeFileSync(localPath, JSON.stringify(current, null, 2), 'utf8');
 }

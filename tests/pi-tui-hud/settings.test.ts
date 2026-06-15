@@ -131,4 +131,13 @@ describe('settings management', () => {
     // Restore ref
     setPiRef(null);
   });
+
+  it('should propagate write/filesystem errors during writeSetting', () => {
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+    vi.mocked(fs.writeFileSync).mockImplementation(() => {
+      throw new Error('EACCES: permission denied');
+    });
+
+    expect(() => writeSetting(cwd, 'enabled', false)).toThrow('EACCES: permission denied');
+  });
 });

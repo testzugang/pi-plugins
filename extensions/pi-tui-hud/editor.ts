@@ -101,7 +101,7 @@ export function registerEditor(pi: ExtensionAPI) {
     liveCtx = null;
     currentTheme = null;
     liveEditorTui = null;
-    if (ctx.hasUI && ctx.ui) {
+    if (ctx && ctx.hasUI && ctx.ui) {
       ctx.ui.setEditorComponent(undefined);
       ctx.ui.setWidget('hud-breadcrumb-widget', undefined);
     }
