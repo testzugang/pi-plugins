@@ -41,9 +41,10 @@ export default function (pi: ExtensionAPI) {
 
       if (arg === 'info') {
         const c = readSettings(ctx.cwd);
+        const cliEnabled = pi.getFlag('hud') !== false;
         ctx.ui.notify(
           `HUD Settings:\n` +
-            `• Enabled: ${c.enabled ? 'yes' : 'no'}\n` +
+            `• Enabled: ${c.enabled ? 'yes' : 'no'}${cliEnabled ? '' : ' (forced off by CLI --hud=false)'}\n` +
             `• Breadcrumb: ${c.breadcrumb}\n` +
             `• Footer: ${c.footer ? 'on' : 'off'}\n` +
             `• Header: ${c.header ? 'on' : 'off'}\n` +

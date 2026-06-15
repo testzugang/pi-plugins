@@ -153,4 +153,27 @@ describe('gradient logo header', () => {
     const lines = renderer.render(80);
     expect(lines.length).toBe(0);
   });
+
+  it('should request render when hud_settings_changed is emitted', () => {
+    let settingsChangedHandler: Function = () => {};
+    mockPi.events.on.mockImplementation((event: string, handler: Function) => {
+      if (event === 'hud_settings_changed') {
+        settingsChangedHandler = handler;
+      }
+      return vi.fn(); // Mock unsubscribe
+    });
+
+    registerHeader(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text };
+    
+    // Trigger header factory registration to capture liveTui
+    mockCtx.ui.setHeader.mock.calls[0][0](mockTui, mockTheme);
+
+    // Trigger settings changed event
+    settingsChangedHandler(mockCtx);
+    expect(mockTui.requestRender).toHaveBeenCalled();
+  });
 });

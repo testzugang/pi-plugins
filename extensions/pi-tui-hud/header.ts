@@ -47,6 +47,7 @@ export function generateGradientHeader(logoText: string, width: number): string 
 
 export function registerHeader(pi: ExtensionAPI) {
   let liveTui: any = null;
+  let unsubSettings: (() => void) | null = null;
 
   pi.on('session_start', (_event, ctx) => {
     if (!ctx.hasUI) return;
@@ -68,11 +69,23 @@ export function registerHeader(pi: ExtensionAPI) {
         },
       };
     });
+
+    if (unsubSettings) {
+      unsubSettings();
+    }
+
+    unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
+      if (changeCtx && liveTui) {
+        liveTui.requestRender();
+      }
+    });
   });
 
-  pi.events.on('hud_settings_changed', (changeCtx) => {
-    if (changeCtx && liveTui) {
-      liveTui.requestRender();
+  pi.on('session_shutdown', (_event, ctx) => {
+    liveTui = null;
+    if (unsubSettings) {
+      unsubSettings();
+      unsubSettings = null;
     }
   });
 }
