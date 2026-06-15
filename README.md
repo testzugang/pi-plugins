@@ -251,6 +251,21 @@ Or configure specific settings directly:
   - `⚙️` (Executing / Running tools)
   - `⚠️` (Blocked / Awaiting interaction)
 
+### [`pi-tui-hud`](extensions/pi-tui-hud)
+
+Secure, high-fidelity HUD and Status Bar for Pi. Real-time token tracking, cumulative cost accounting, model-to-folder breadcrumbs, and gradient logo headers.
+
+Install the package, then configure your HUD directly inside any session:
+
+```text
+/hud
+/hud info
+/hud breadcrumb:top
+/hud footer:off
+/hud header:off
+/hud header-info:on
+```
+
 ## Current resources
 
 ### Skills
@@ -269,6 +284,7 @@ Or configure specific settings directly:
 
 - [`browser-tools`](extensions/browser-tools)
 - [`session-branding`](extensions/session-branding)
+- [`pi-tui-hud`](extensions/pi-tui-hud)
 - [`pr-findings`](packages/pi-pr-findings)
 
 ## Repository layout
