@@ -213,10 +213,10 @@ describe('footer registration and rendering', () => {
     const mockFooterData = {
       getGitBranch: () => '',
       onBranchChange: () => vi.fn(),
-      // Unsorted map with dangerous control characters, unclosed ESCs, CSIs, disallowed SGR, colon CSIs, tabs, C1 8-bit controls, DCS payloads, and OSC exploits
+      // Unsorted map with dangerous control characters, unclosed ESCs, CSIs, disallowed SGR, colon CSIs, tabs, C1 8-bit controls, C1 ST, embedded ESC payloads, and OSC exploits
       getExtensionStatuses: () => new Map([
-        ['z-ext', 'Z-Status\twith\tcontrol\x07chars and unclosed \x1b raw ESC \u009b2JC1CSI \u009d2;C1OSC\u0007'],
-        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b[0 qintermediateSpace \x1b[200~private \x1b[2@finalbyte \x1b[>0cintermediates \x1b[38:2::255mcolonCSI \x1b[38;5;999999munboundedSGR \x1b[5mblink \x1b[8mhidden \x1b]2;incomplete OSC with spaces \x1bP1$rDangerousDcsPayload\x1b\\ \x1b(0charset'],
+        ['z-ext', 'Z-Status\twith\tcontrol\x07chars and unclosed \x1b raw ESC \u009b2JC1CSI \u009d2;C1OSCWithST\u009cSAFE'],
+        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b[0 qintermediateSpace \x1b[200~private \x1b[2@finalbyte \x1b[>0cintermediates \x1b[38:2::255mcolonCSI \x1b[38;5;999999munboundedSGR \x1b[5mblink \x1b[8mhidden \x1b]2;incomplete OSC with spaces \x1bP1$rSome\x1b[2JEmbeddedESC\x1b\\SAFE \x1b(0charset'],
       ]),
     };
 
@@ -224,14 +224,15 @@ describe('footer registration and rendering', () => {
     const lines = renderer.render(200);
 
     // Line 2 should be sorted alphabetically:
-    // a-ext first: SGR color code \x1b[31m and \x1b[39m are preserved. CSI, DCS (+payload), OSC, other ESC families (charset), disallowed SGR are stripped.
-    // z-ext next: \x07 (BEL), \t (tab 0x09), raw \x1b, C1 controls are replaced with spaces or sanitized.
-    expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs intermediateSpace private finalbyte intermediates colonCSI unboundedSGR blink hidden charset\x1b[0m');
-    expect(lines[1]).toContain('Z-Status with control chars and unclosed aw ESC C1CSI\x1b[0m');
+    // a-ext first: SGR color code \x1b[31m and \x1b[39m are preserved. CSI, DCS (+payload with embedded ESC), OSC, other ESC families (charset), disallowed SGR are stripped.
+    // z-ext next: \x07 (BEL), \t (tab 0x09), raw \x1b, C1 controls (+payload up to C1 ST) are replaced with spaces or sanitized.
+    expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs intermediateSpace private finalbyte intermediates colonCSI unboundedSGR blink hidden SAFE charset\x1b[0m');
+    expect(lines[1]).toContain('Z-Status with control chars and unclosed aw ESC C1CSI SAFE\x1b[0m');
     
     // Negative security assertions: Verifying all dangerous payloads were stripped completely
     expect(lines[1]).not.toContain('2JC1CSI');
-    expect(lines[1]).not.toContain('2;C1OSC');
+    expect(lines[1]).not.toContain('C1OSCWithST');
+    expect(lines[1]).not.toContain('EmbeddedESC');
     expect(lines[1]).not.toContain('DangerousDcsPayload');
     
     // Verify style reset is appended to prevent leaks
