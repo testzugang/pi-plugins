@@ -46,10 +46,13 @@ export function generateGradientHeader(logoText: string, width: number): string 
 }
 
 export function registerHeader(pi: ExtensionAPI) {
+  let liveTui: any = null;
+
   pi.on('session_start', (_event, ctx) => {
     if (!ctx.hasUI) return;
 
     ctx.ui.setHeader((_tui, theme) => {
+      liveTui = _tui;
       return {
         render(width: number): string[] {
           const currentSettings = readSettings(ctx.cwd);
@@ -65,5 +68,11 @@ export function registerHeader(pi: ExtensionAPI) {
         },
       };
     });
+  });
+
+  pi.events.on('hud_settings_changed', (changeCtx) => {
+    if (changeCtx && liveTui) {
+      liveTui.requestRender();
+    }
   });
 }

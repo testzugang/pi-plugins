@@ -24,6 +24,12 @@ export default function (pi: ExtensionAPI) {
       const arg = args?.trim().toLowerCase();
 
       if (!arg) {
+        const cliEnabled = pi.getFlag('hud') !== false;
+        if (!cliEnabled) {
+          ctx.ui.notify('HUD is forced off by the --hud command-line flag.', 'warning');
+          return;
+        }
+
         const config = readSettings(ctx.cwd);
         const next = !config.enabled;
         writeSetting(ctx.cwd, 'enabled', next);

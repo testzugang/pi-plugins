@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import { join } from 'node:path';
-import { readSettings, writeSetting, DEFAULT_SETTINGS } from '../../extensions/pi-tui-hud/settings';
+import { readSettings, writeSetting, DEFAULT_SETTINGS, setPiRef } from '../../extensions/pi-tui-hud/settings';
 
 vi.mock('node:fs');
 vi.mock('node:os', () => ({
@@ -115,5 +115,20 @@ describe('settings management', () => {
 
     expect(() => writeSetting(cwd, 'breadcrumb', 'bad' as unknown as 'hide')).toThrow(TypeError);
     expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  it('should respect the global Pi CLI flag when set to false', () => {
+    vi.mocked(fs.existsSync).mockReturnValue(false);
+
+    const mockPi = {
+      getFlag: vi.fn().mockReturnValue(false),
+    };
+    setPiRef(mockPi);
+
+    const settings = readSettings(cwd);
+    expect(settings.enabled).toBe(false); // Forced false by CLI flag
+
+    // Restore ref
+    setPiRef(null);
   });
 });

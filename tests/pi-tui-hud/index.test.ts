@@ -60,6 +60,16 @@ describe('index extension registration and commands', () => {
     expect(mockCtx.ui.notify).toHaveBeenCalledWith('HUD enabled → off', 'info');
   });
 
+  it('should show a warning and refuse to toggle if HUD is forced off by the CLI flag', async () => {
+    mockPi.getFlag.mockReturnValue(false); // Force off via CLI flag --hud=false
+
+    hudExtension(mockPi as any);
+    await hudCommand.handler('', mockCtx);
+
+    expect(writeSetting).not.toHaveBeenCalled();
+    expect(mockCtx.ui.notify).toHaveBeenCalledWith('HUD is forced off by the --hud command-line flag.', 'warning');
+  });
+
   it('should display settings info when calling /hud info', async () => {
     vi.mocked(readSettings).mockReturnValue({
       enabled: true,
@@ -99,6 +109,13 @@ describe('index extension registration and commands', () => {
     expect(writeSetting).toHaveBeenCalledWith('/mock/cwd', 'footer', false);
     expect(mockPi.events.emit).toHaveBeenCalledWith('hud_settings_changed', mockCtx);
     expect(mockCtx.ui.notify).toHaveBeenCalledWith('footer turned off', 'info');
+
+    // Test header:off and header-info:on
+    await hudCommand.handler('header:off', mockCtx);
+    expect(writeSetting).toHaveBeenCalledWith('/mock/cwd', 'header', false);
+
+    await hudCommand.handler('header-info:on', mockCtx);
+    expect(writeSetting).toHaveBeenCalledWith('/mock/cwd', 'header-info', true);
   });
 
   it('should reject invalid boolean values', async () => {

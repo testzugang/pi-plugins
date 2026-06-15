@@ -24,6 +24,7 @@ describe('gradient logo header', () => {
           sessionStartHandler = handler;
         }
       }),
+      events: { on: vi.fn(), emit: vi.fn() },
     };
     mockCtx = {
       cwd: '/mock/cwd',
