@@ -108,6 +108,8 @@ export function registerEditor(pi: ExtensionAPI) {
   }
 
   pi.on('session_start', (_event, ctx) => {
+    if (!ctx.hasUI || !ctx.ui) return;
+    
     const s = readSettings(ctx.cwd);
     if (s.enabled) {
       enable(ctx);
@@ -148,6 +150,7 @@ export function registerEditor(pi: ExtensionAPI) {
   });
 
   pi.on('model_select', (_event, ctx) => {
+    if (!ctx.hasUI || !ctx.ui) return;
     if (editorEnabled) {
       liveCtx = ctx;
       breadcrumbMode = readSettings(ctx.cwd).breadcrumb;

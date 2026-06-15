@@ -6,6 +6,13 @@ vi.mock('../../extensions/pi-tui-hud/settings', () => ({
   readSettings: vi.fn(),
   writeSetting: vi.fn(),
   setPiRef: vi.fn(),
+  DEFAULT_SETTINGS: {
+    enabled: true,
+    breadcrumb: 'inner',
+    footer: true,
+    header: true,
+    'header-info': false,
+  },
 }));
 
 describe('index extension registration and commands', () => {
