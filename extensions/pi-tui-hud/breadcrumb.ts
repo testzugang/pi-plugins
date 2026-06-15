@@ -1,6 +1,6 @@
 import { basename } from 'node:path';
 import type { ExtensionContext, Theme } from '@earendil-works/pi-coding-agent';
-import { hasNerdFonts, hexFg, withIcon } from './utils';
+import { hasNerdFonts, withIcon } from './utils';
 
 const NERD = hasNerdFonts();
 export const ICON_MODEL = NERD ? '\uF4BC' : '';
@@ -37,8 +37,8 @@ export function getBreadcrumbData(ctx: ExtensionContext | null): BreadcrumbData 
 
 export function renderBreadcrumbInfo(data: BreadcrumbData, theme: Theme): string {
   return (
-    hexFg('#d787af', data.modelText) +
+    theme.fg('dim', data.modelText) +
     theme.fg('dim', ` ${SEP} `) +
-    hexFg('#00afaf', data.folderText)
+    theme.fg('accent', theme.bold(data.folderText))
   );
 }

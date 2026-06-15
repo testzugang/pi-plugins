@@ -13,7 +13,8 @@ describe('breadcrumb calculations', () => {
 
   it('should render breadcrumb info with correct color and styling', () => {
     const mockTheme = {
-      fg: (token: string, text: string) => `[${token}]${text}`
+      fg: (token: string, text: string) => `[${token}]${text}`,
+      bold: (text: string) => `<b>${text}</b>`,
     };
     const mockData = {
       modelName: 'claude',
@@ -22,8 +23,8 @@ describe('breadcrumb calculations', () => {
       folderText: 'project'
     };
     const info = renderBreadcrumbInfo(mockData, mockTheme as any);
-    expect(info).toContain('project');
-    expect(info).toContain('claude');
+    expect(info).toContain('[accent]<b>project</b>');
+    expect(info).toContain('[dim]claude');
     expect(info).toContain('[dim]');
   });
 });

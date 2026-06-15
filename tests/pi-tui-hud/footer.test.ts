@@ -97,6 +97,7 @@ describe('footer registration and rendering', () => {
     const mockTui = { requestRender: vi.fn() };
     const mockTheme = {
       fg: (token: string, text: string) => `[${token}]${text}`,
+      bold: (text: string) => `<b>${text}</b>`,
     };
     const mockFooterData = {
       getGitBranch: () => 'main',
@@ -110,8 +111,8 @@ describe('footer registration and rendering', () => {
     expect(lines.length).toBe(2);
     
     // Line 1: Git branch, context usage, cumulative stats, costs, thinking status
-    expect(lines[0]).toContain('[success]⎇ main');
-    expect(lines[0]).toContain('7.5%/200k'); // 15000 / 200000 = 7.5%
+    expect(lines[0]).toContain('[success]<b>⎇ main</b>');
+    expect(lines[0]).toContain('[success]7.5%/200k'); // 15000 / 200000 = 7.5%
     expect(lines[0]).toContain('↑10k');
     expect(lines[0]).toContain('↓5k');
     expect(lines[0]).toContain('CH:33.3%'); // cacheRead (5000) / prompt (10000 + 5000) = 33.3%
@@ -126,7 +127,7 @@ describe('footer registration and rendering', () => {
     expect(totalVisibleWidth).toBe(80);
   });
 
-  it('should render warning above 70% and error above 90% context usage', () => {
+  it('should render context usage with threshold-specific emphasis', () => {
     vi.mocked(readSettings).mockReturnValue({
       enabled: true,
       breadcrumb: 'inner',
@@ -144,7 +145,10 @@ describe('footer registration and rendering', () => {
     sessionStartHandler({}, mockCtx);
 
     const mockTui = { requestRender: vi.fn() };
-    const mockTheme = { fg: (token: string, text: string) => `[${token}]${text}` };
+    const mockTheme = {
+      fg: (token: string, text: string) => `[${token}]${text}`,
+      bold: (text: string) => `<b>${text}</b>`,
+    };
     const mockFooterData = {
       getGitBranch: () => 'main',
       onBranchChange: () => vi.fn(),
@@ -153,15 +157,25 @@ describe('footer registration and rendering', () => {
 
     const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
 
-    // Scenario A: 75% context usage (Warning)
+    // Scenario A: <50% context usage (Success)
+    mockCtx.getContextUsage.mockReturnValue({ percent: 45, contextWindow: 200000 });
+    const linesSuccess = renderer.render(80);
+    expect(linesSuccess[0]).toContain('[success]45.0%/200k');
+
+    // Scenario B: 50-70% context usage (Accent)
+    mockCtx.getContextUsage.mockReturnValue({ percent: 60, contextWindow: 200000 });
+    const linesAccent = renderer.render(80);
+    expect(linesAccent[0]).toContain('[accent]60.0%/200k');
+
+    // Scenario C: 70-90% context usage (Warning)
     mockCtx.getContextUsage.mockReturnValue({ percent: 75, contextWindow: 200000 });
     const linesWarn = renderer.render(80);
     expect(linesWarn[0]).toContain('[warning]75.0%/200k');
 
-    // Scenario B: 95% context usage (Error)
+    // Scenario D: >90% context usage (Bold Error)
     mockCtx.getContextUsage.mockReturnValue({ percent: 95, contextWindow: 200000 });
     const linesErr = renderer.render(80);
-    expect(linesErr[0]).toContain('[error]95.0%/200k');
+    expect(linesErr[0]).toContain('[error]<b>95.0%/200k</b>');
   });
 
   it('should render unknown percentage when context usage is missing or null', () => {
@@ -182,7 +196,7 @@ describe('footer registration and rendering', () => {
     sessionStartHandler({}, mockCtx);
 
     const mockTui = { requestRender: vi.fn() };
-    const mockTheme = { fg: (token: string, text: string) => text };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
     const mockFooterData = {
       getGitBranch: () => 'main',
       onBranchChange: () => vi.fn(),
@@ -227,7 +241,7 @@ describe('footer registration and rendering', () => {
       // Unsorted map with dangerous control characters, unclosed ESCs, CSIs, disallowed SGR, colon CSIs, tabs, C1 8-bit controls, C1 ST, C1 SOS, embedded ESC payloads, and OSC exploits
       getExtensionStatuses: () => new Map([
         ['z-ext', 'Z-Status\twith\tcontrol\x07chars and unclosed \x1b raw ESC \u009b2JC1CSI \u009d2;C1OSCWithST\u009cSAFE \u0098DangerousC1SosPayload\u009c'],
-        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b[0 qintermediateSpace \x1b[200~private \x1b[2@finalbyte \x1b[>0cintermediates \x1b[38:2::255mcolonCSI \x1b[38;5;999999munboundedSGR \x1b[5mblink \x1b[8mhidden \x1b]2;incomplete OSC with spaces \x1bP1$rSome\x1b[2JEmbeddedESC\x1b\\SAFE \x1b(0charset'],
+        ['a-ext', '\x1b[31mA-Status\x1b[39m with \x1b[2JCSIs \x1b[0 qintermediateSpace \x1b[200~private \x1b[2@finalbyte \x1b[>0cintermediates \x1b[38:2::255mcolonCSI \x1b[38;5;999999munboundedSGR \x1b[5mblink \x1b[8mhidden \x1b]2;incomplete OSC with spaces \x1bP1$rDangerousDcsPayload\x1b[2JEmbeddedESC\x1b\\SAFE \x1b(0charset'],
       ]),
     };
 
@@ -269,7 +283,7 @@ describe('footer registration and rendering', () => {
     sessionStartHandler({}, mockCtx);
 
     const mockTui = { requestRender: vi.fn() };
-    const mockTheme = { fg: (token: string, text: string) => text };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
     const mockFooterData = {
       getGitBranch: () => 'extremely-super-long-branch-name-that-does-not-fit-at-all',
       onBranchChange: () => vi.fn(),
@@ -333,7 +347,7 @@ describe('footer registration and rendering', () => {
     sessionStartHandler({}, mockCtx);
 
     const mockTui = { requestRender: vi.fn() };
-    const mockTheme = { fg: (token: string, text: string) => text };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
     const mockFooterData = {
       getGitBranch: () => 'main',
       onBranchChange: () => vi.fn(),

@@ -1,4 +1,4 @@
-import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
+import type { ExtensionAPI, ExtensionContext, Theme } from '@earendil-works/pi-coding-agent';
 import { readSettings, DEFAULT_SETTINGS } from './settings';
 import { withIcon, isExtensionContext } from './utils';
 import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
@@ -98,6 +98,14 @@ export function formatTokenCount(count: number): string {
   return `${(count / 1000000).toFixed(1).replace('.0', '')}M`;
 }
 
+function renderContextUsage(theme: Theme, ratio: number | null, text: string): string {
+  if (ratio === null) return text;
+  if (ratio > 90) return theme.fg('error', theme.bold(text));
+  if (ratio >= 70) return theme.fg('warning', text);
+  if (ratio >= 50) return theme.fg('accent', text);
+  return theme.fg('success', text);
+}
+
 export function registerFooter(pi: ExtensionAPI) {
   let isStreaming = false;
   let liveUsage: any = null;
@@ -124,7 +132,7 @@ export function registerFooter(pi: ExtensionAPI) {
 
           // Read git branch
           const branch = footerData.getGitBranch() || '';
-          const gitSegment = branch ? theme.fg('success', withIcon('⎇', branch)) : '';
+          const gitSegment = branch ? theme.fg('success', theme.bold(withIcon('⎇', branch))) : '';
 
           // Read cumulative stats (Input, Output, Cache, Costs)
           let totalInput = 0, totalOutput = 0, totalCacheRead = 0, totalCacheWrite = 0, totalCost = 0;
@@ -169,10 +177,7 @@ export function registerFooter(pi: ExtensionAPI) {
             }
           }
 
-          if (ratio !== null) {
-            if (ratio > 90) pctStr = theme.fg('error', pctStr);
-            else if (ratio > 70) pctStr = theme.fg('warning', pctStr);
-          }
+          pctStr = renderContextUsage(theme, ratio, pctStr);
 
           // Build Cache Hit Rate
           const promptTokens = totalInput + totalCacheRead + totalCacheWrite;

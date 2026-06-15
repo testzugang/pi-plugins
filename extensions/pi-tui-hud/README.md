@@ -7,9 +7,9 @@
 ## ✨ Features
 
 - **True Gradient Logo Header**: Smooth character-by-character color interpolation (Pink `#d787af` ➜ Cyan `#00afaf`) using `Intl.Segmenter` and `visibleWidth` to perfectly preserve complex Unicode emoji/grapheme boundaries.
-- **Segmented TUI Footer**: Displays cumulative session costs (`$X.XXX`), cache hit rates (`CH:XX.X%`), cumulative tokens (↑/↓), and current context usage percentage with yellow (>70%) and red (>90%) warning thresholds.
+- **Segmented TUI Footer**: Displays a bold highlighted git branch, cumulative session costs (`$X.XXX`), cache hit rates (`CH:XX.X%`), cumulative tokens (↑/↓), and current context usage with threshold colors: success (<50%), accent (50–69.9%), warning (70–90%), and bold error (>90%).
 - **Reactive Settings Changes**: Toggles (`/hud footer:off`, `/hud header:off`, etc.) are cached in-memory and applied instantly across the active TUI (no filesystem reads on render hot paths).
-- **Model ➜ Folder Breadcrumbs**: Seamlessly draws the current model name and active folder path directly into the editor's top border frame (`inner`) or as an above-editor TUI widget (`top`).
+- **Model ➜ Folder Breadcrumbs**: Seamlessly draws the dimmed current model name and bold highlighted active folder directly into the editor's top border frame (`inner`) or as an above-editor TUI widget (`top`).
 - **Complete Headless Safety**: Includes strict, early `isExtensionContext` type-guarding on all EventBus and lifecycle handlers. Automatically shuts down and restores Pi's native headers and footers when disabled or on session exit.
 
 ## 🛠️ Usage
