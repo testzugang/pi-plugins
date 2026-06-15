@@ -15,16 +15,24 @@ describe('gradient logo header', () => {
   let mockPi: any;
   let mockCtx: any;
   let sessionStartHandler: Function;
+  let busHandlers: Record<string, Function>;
 
   beforeEach(() => {
     vi.resetAllMocks();
+    busHandlers = {};
     mockPi = {
       on: vi.fn().mockImplementation((event, handler) => {
         if (event === 'session_start') {
           sessionStartHandler = handler;
         }
       }),
-      events: { on: vi.fn(), emit: vi.fn() },
+      events: {
+        on: vi.fn().mockImplementation((event, handler) => {
+          busHandlers[event] = handler;
+          return vi.fn(); // Mock unsubscribe
+        }),
+        emit: vi.fn(),
+      },
     };
     mockCtx = {
       cwd: '/mock/cwd',
@@ -150,11 +158,20 @@ describe('gradient logo header', () => {
       'header-info': false,
     });
 
-    const lines = renderer.render(80);
-    expect(lines.length).toBe(0);
+    // Since it is turned off dynamically, the event handler will disable it and call setHeader(undefined)
+    busHandlers['hud_settings_changed'](mockCtx);
+    expect(mockCtx.ui.setHeader).toHaveBeenLastCalledWith(undefined);
   });
 
   it('should request render when hud_settings_changed is emitted', () => {
+    vi.mocked(readSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
     let settingsChangedHandler: Function = () => {};
     mockPi.events.on.mockImplementation((event: string, handler: Function) => {
       if (event === 'hud_settings_changed') {

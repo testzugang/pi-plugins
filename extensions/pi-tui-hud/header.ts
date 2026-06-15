@@ -48,18 +48,17 @@ export function generateGradientHeader(logoText: string, width: number): string 
 export function registerHeader(pi: ExtensionAPI) {
   let liveTui: any = null;
   let unsubSettings: (() => void) | null = null;
+  let headerEnabled = false;
 
-  pi.on('session_start', (_event, ctx) => {
-    if (!ctx.hasUI) return;
+  function enable(ctx: any) {
+    if (!ctx || !ctx.hasUI || !ctx.ui) return;
+    headerEnabled = true;
 
-    ctx.ui.setHeader((_tui, theme) => {
+    ctx.ui.setHeader((_tui: any, theme: any) => {
       liveTui = _tui;
       return {
         render(width: number): string[] {
           const currentSettings = readSettings(ctx.cwd);
-          if (!currentSettings.enabled || !currentSettings.header) {
-            return [];
-          }
           const infoLines: string[] = [generateGradientHeader('PI-TUI-HUD', width)];
           if (currentSettings['header-info']) {
             const rawInfo = ` Model: ${ctx.model?.id || 'unknown'} | CWD: ${ctx.cwd}`;
@@ -69,20 +68,48 @@ export function registerHeader(pi: ExtensionAPI) {
         },
       };
     });
+  }
+
+  function disable(ctx: any) {
+    headerEnabled = false;
+    liveTui = null;
+    if (ctx && ctx.hasUI && ctx.ui) {
+      ctx.ui.setHeader(undefined); // Properly restores default header!
+    }
+  }
+
+  pi.on('session_start', (_event, ctx) => {
+    if (!ctx || !ctx.hasUI || !ctx.ui) return;
+
+    const s = readSettings(ctx.cwd);
+    if (s.enabled && s.header) {
+      enable(ctx);
+    } else {
+      disable(ctx);
+    }
 
     if (unsubSettings) {
       unsubSettings();
     }
 
     unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
-      if (changeCtx && liveTui) {
+      if (!changeCtx || !changeCtx.hasUI || !changeCtx.ui) return;
+      
+      const updatedSettings = readSettings(changeCtx.cwd);
+      if (updatedSettings.enabled && updatedSettings.header && !headerEnabled) {
+        enable(changeCtx);
+      } else if ((!updatedSettings.enabled || !updatedSettings.header) && headerEnabled) {
+        disable(changeCtx);
+      } else if (headerEnabled && liveTui) {
         liveTui.requestRender();
       }
     });
   });
 
   pi.on('session_shutdown', (_event, ctx) => {
-    liveTui = null;
+    if (headerEnabled) {
+      disable(ctx);
+    }
     if (unsubSettings) {
       unsubSettings();
       unsubSettings = null;
