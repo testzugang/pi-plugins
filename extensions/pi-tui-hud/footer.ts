@@ -56,7 +56,7 @@ function sanitizeStatusText(text: string): string {
 
   const sgrCodes: string[] = [];
   const tokenPrefix = `__HUD_SGR_SAFE_COLOR_TOKEN_${Math.random().toString(36).slice(2)}__`;
-  
+
   // 2. Extract and mask ONLY approved SGR color and style formatting codes, discard blink/hidden/other SGRs
   clean = clean.replace(/\x1b\[([0-9;]*)m/g, (match, paramsStr) => {
     if (isSafeSgr(paramsStr)) {
@@ -188,25 +188,12 @@ export function registerFooter(pi: ExtensionAPI) {
           const costStr = totalCost > 0 ? ` $${totalCost.toFixed(3)}` : '';
 
           const leftSegment = `${gitSegment ? gitSegment + ' ' : ''}${pctStr} ↑${formatTokenCount(totalInput)} ↓${formatTokenCount(totalOutput)}${cacheStr}${costStr}`;
-          
-          // Thinking status (Right segment)
-          const tl = pi.getThinkingLevel() || 'off';
-          const rightSegment = tl !== 'off' ? theme.fg('accent', `⚡ ${tl}`) : '';
 
           const leftWidth = visibleWidth(leftSegment);
-          const rightWidth = visibleWidth(rightSegment);
-          const spaceNeeded = width - leftWidth - rightWidth;
+          let statsLine = leftWidth <= width
+            ? leftSegment + ' '.repeat(width - leftWidth)
+            : truncateToWidth(leftSegment, width, '...');
           
-          let statsLine: string;
-          if (spaceNeeded >= 0) {
-            statsLine = `${leftSegment}${' '.repeat(spaceNeeded)}${rightSegment}`;
-          } else {
-            const availLeft = Math.max(0, width - rightWidth - 2);
-            const truncatedLeft = truncateToWidth(leftSegment, availLeft, '...');
-            const padSize = Math.max(0, width - visibleWidth(truncatedLeft) - rightWidth);
-            statsLine = `${truncatedLeft}${' '.repeat(padSize)}${rightSegment}`;
-          }
-
           if (visibleWidth(statsLine) > width) {
             statsLine = truncateToWidth(statsLine, width, '');
           }
@@ -260,7 +247,7 @@ export function registerFooter(pi: ExtensionAPI) {
 
     unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
       if (!isExtensionContext(changeCtx)) return;
-      
+
       const updatedSettings = readSettings(changeCtx.cwd);
       cachedSettings = updatedSettings;
 
@@ -274,21 +261,21 @@ export function registerFooter(pi: ExtensionAPI) {
     });
   });
 
-  pi.on('agent_start', () => { 
-    isStreaming = true; 
-    liveUsage = null; 
+  pi.on('agent_start', () => {
+    isStreaming = true;
+    liveUsage = null;
     liveTui?.requestRender();
   });
-  
-  pi.on('message_update', (event) => { 
+
+  pi.on('message_update', (event) => {
     if (isStreaming && event?.message?.usage) {
-      liveUsage = event.message.usage; 
+      liveUsage = event.message.usage;
       liveTui?.requestRender();
     }
   });
-  
-  pi.on('message_end', () => { 
-    isStreaming = false; 
+
+  pi.on('message_end', () => {
+    isStreaming = false;
     liveTui?.requestRender();
   });
 

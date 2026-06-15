@@ -9,6 +9,7 @@ let currentTheme: any = null;
 let breadcrumbMode = 'inner';
 let liveCtx: ExtensionContext | null = null;
 let liveEditorTui: any = null;
+let liveThinkingLevel = 'off';
 
 export class HudCustomEditor extends CustomEditor {
   render(width: number): string[] {
@@ -19,7 +20,7 @@ export class HudCustomEditor extends CustomEditor {
     const theme = liveCtx?.ui?.theme || currentTheme;
 
     if (breadcrumbMode === 'inner' && liveCtx && theme) {
-      const data = getBreadcrumbData(liveCtx);
+      const data = getBreadcrumbData(liveCtx, liveThinkingLevel);
       const infoPart = renderBreadcrumbInfo(data, theme);
       const infoWidth = visibleWidth(infoPart);
       
@@ -58,7 +59,7 @@ export function registerEditor(pi: ExtensionAPI) {
     const s = readSettings(ctx.cwd);
     if (s.enabled && s.breadcrumb === 'top') {
       ctx.ui.setWidget('hud-breadcrumb-widget', (tui, theme) => {
-        const data = getBreadcrumbData(ctx);
+        const data = getBreadcrumbData(ctx, liveThinkingLevel);
         return new Text(renderBreadcrumbInfo(data, theme), 0, 0);
       }, { placement: 'aboveEditor' });
     } else {
@@ -69,6 +70,7 @@ export function registerEditor(pi: ExtensionAPI) {
   function enable(ctx: ExtensionContext) {
     editorEnabled = true;
     liveCtx = ctx;
+    liveThinkingLevel = pi.getThinkingLevel() || 'off';
     currentTheme = ctx.ui.theme;
     
     const s = readSettings(ctx.cwd);
@@ -88,6 +90,7 @@ export function registerEditor(pi: ExtensionAPI) {
   function disable(ctx: ExtensionContext) {
     editorEnabled = false;
     liveCtx = null;
+    liveThinkingLevel = 'off';
     currentTheme = null;
     liveEditorTui = null;
     if (ctx && ctx.hasUI && ctx.ui) {
@@ -120,6 +123,7 @@ export function registerEditor(pi: ExtensionAPI) {
         disable(changeCtx);
       } else if (editorEnabled) {
         liveCtx = changeCtx;
+        liveThinkingLevel = pi.getThinkingLevel() || 'off';
         breadcrumbMode = updatedSettings.breadcrumb;
         
         if (updatedSettings.breadcrumb === 'inner') {
@@ -142,6 +146,18 @@ export function registerEditor(pi: ExtensionAPI) {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
     if (editorEnabled) {
       liveCtx = ctx;
+      liveThinkingLevel = pi.getThinkingLevel() || 'off';
+      breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
+      updateTopWidget(ctx);
+      liveEditorTui?.requestRender();
+    }
+  });
+
+  pi.on('thinking_level_select', (event, ctx) => {
+    if (!ctx || !ctx.hasUI || !ctx.ui) return;
+    if (editorEnabled) {
+      liveCtx = ctx;
+      liveThinkingLevel = event.level || pi.getThinkingLevel() || 'off';
       breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
       updateTopWidget(ctx);
       liveEditorTui?.requestRender();

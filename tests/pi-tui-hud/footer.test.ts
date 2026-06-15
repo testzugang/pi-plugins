@@ -110,14 +110,15 @@ describe('footer registration and rendering', () => {
 
     expect(lines.length).toBe(2);
     
-    // Line 1: Git branch, context usage, cumulative stats, costs, thinking status
+    // Line 1: Git branch, context usage, cumulative stats, and costs
     expect(lines[0]).toContain('[success]<b>⎇ main</b>');
     expect(lines[0]).toContain('[success]7.5%/200k'); // 15000 / 200000 = 7.5%
     expect(lines[0]).toContain('↑10k');
     expect(lines[0]).toContain('↓5k');
     expect(lines[0]).toContain('CH:33.3%'); // cacheRead (5000) / prompt (10000 + 5000) = 33.3%
     expect(lines[0]).toContain('$0.150');
-    expect(lines[0]).toContain('[accent]⚡ med');
+    expect(lines[0]).not.toContain('⚡ med');
+    expect(mockPi.getThinkingLevel).not.toHaveBeenCalled();
 
     // Line 2: Extension status
     expect(lines[1]).toContain('Headroom -42%');
@@ -297,11 +298,10 @@ describe('footer registration and rendering', () => {
 
     // Output length must be exactly 30 columns
     expect(visibleWidth(lines[0])).toBe(30);
-    expect(lines[0]).toContain('⚡ med'); // Right segment is preserved
+    expect(lines[0]).not.toContain('⚡ med');
     expect(lines[0]).toContain('...'); // Left segment is truncated
 
-    // Test extreme narrowness: width 3 (rightSegment is "⚡ med" which is 5 columns)
-    // The output MUST be strictly truncated to exactly 3 columns.
+    // Test extreme narrowness. The output MUST be strictly truncated to exactly 3 columns.
     const extremeLines = renderer.render(3);
     expect(visibleWidth(extremeLines[0])).toBe(3);
   });

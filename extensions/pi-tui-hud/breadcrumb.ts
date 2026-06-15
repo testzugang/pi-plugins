@@ -10,7 +10,9 @@ export const SEP = NERD ? '\uf054' : '/';
 export interface BreadcrumbData {
   modelName: string;
   folder: string;
+  thinkingLevel: string;
   modelText: string;
+  thinkingText: string;
   folderText: string;
 }
 
@@ -22,15 +24,18 @@ export function sanitizePlainText(text: string): string {
     .trim();
 }
 
-export function getBreadcrumbData(ctx: ExtensionContext | null): BreadcrumbData {
+export function getBreadcrumbData(ctx: ExtensionContext | null, thinkingLevel = 'off'): BreadcrumbData {
   const cwd = ctx?.cwd ?? process.cwd();
   const folder = sanitizePlainText(basename(cwd) || cwd);
   const modelName = sanitizePlainText(ctx?.model?.name || ctx?.model?.id || 'no-model');
+  const sanitizedThinkingLevel = sanitizePlainText(thinkingLevel || 'off');
 
   return {
     modelName,
     folder,
+    thinkingLevel: sanitizedThinkingLevel,
     modelText: withIcon(ICON_MODEL, modelName),
+    thinkingText: `⚡ ${sanitizedThinkingLevel}`,
     folderText: withIcon(ICON_FOLDER, folder),
   };
 }
@@ -38,6 +43,8 @@ export function getBreadcrumbData(ctx: ExtensionContext | null): BreadcrumbData 
 export function renderBreadcrumbInfo(data: BreadcrumbData, theme: Theme): string {
   return (
     theme.fg('dim', data.modelText) +
+    ' ' +
+    theme.fg('accent', data.thinkingText) +
     theme.fg('dim', ` ${SEP} `) +
     theme.fg('accent', theme.bold(data.folderText))
   );

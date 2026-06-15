@@ -21,6 +21,7 @@ describe('editor registration and lifecycle', () => {
     unsubMock = vi.fn();
 
     mockPi = {
+      getThinkingLevel: vi.fn().mockReturnValue('med'),
       on: vi.fn().mockImplementation((event, handler) => {
         eventHandlers[event] = handler;
       }),
@@ -38,6 +39,7 @@ describe('editor registration and lifecycle', () => {
       ui: {
         theme: {
           fg: (token: string, text: string) => `[${token}]${text}`,
+          bold: (text: string) => `<b>${text}</b>`,
         },
         setEditorComponent: vi.fn(),
         setWidget: vi.fn(),
@@ -56,6 +58,7 @@ describe('editor registration and lifecycle', () => {
     registerEditor(mockPi);
     expect(mockPi.on).toHaveBeenCalledWith('session_start', expect.any(Function));
     expect(mockPi.on).toHaveBeenCalledWith('model_select', expect.any(Function));
+    expect(mockPi.on).toHaveBeenCalledWith('thinking_level_select', expect.any(Function));
     expect(mockPi.on).toHaveBeenCalledWith('session_shutdown', expect.any(Function));
 
     vi.mocked(readSettings).mockReturnValue({
@@ -176,6 +179,30 @@ describe('editor registration and lifecycle', () => {
 
     // Trigger model select
     eventHandlers['model_select']({}, mockCtx);
+
+    expect(mockTui.requestRender).toHaveBeenCalled();
+  });
+
+  it('should update state and request render on thinking_level_select', () => {
+    vi.mocked(readSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    const mockTui = { requestRender: vi.fn() };
+    mockCtx.ui.setEditorComponent.mockImplementation((factory: any) => {
+      if (factory) {
+        factory(mockTui, mockCtx.ui.theme, {});
+      }
+    });
+
+    registerEditor(mockPi);
+    eventHandlers['session_start']({}, mockCtx);
+
+    eventHandlers['thinking_level_select']({ level: 'high' }, mockCtx);
 
     expect(mockTui.requestRender).toHaveBeenCalled();
   });
