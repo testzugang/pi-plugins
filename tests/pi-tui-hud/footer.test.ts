@@ -227,7 +227,13 @@ describe('footer registration and rendering', () => {
     // a-ext first: SGR color code \x1b[31m and \x1b[39m are preserved. CSI, DCS (+payload), OSC, other ESC families (charset), disallowed SGR are stripped.
     // z-ext next: \x07 (BEL), \t (tab 0x09), raw \x1b, C1 controls are replaced with spaces or sanitized.
     expect(lines[1]).toContain('\x1b[31mA-Status\x1b[39m with CSIs intermediateSpace private finalbyte intermediates colonCSI unboundedSGR blink hidden charset\x1b[0m');
-    expect(lines[1]).toContain('Z-Status with control chars and unclosed aw ESC 2JC1CSI 2;C1OSC\x1b[0m');
+    expect(lines[1]).toContain('Z-Status with control chars and unclosed aw ESC C1CSI\x1b[0m');
+    
+    // Negative security assertions: Verifying all dangerous payloads were stripped completely
+    expect(lines[1]).not.toContain('2JC1CSI');
+    expect(lines[1]).not.toContain('2;C1OSC');
+    expect(lines[1]).not.toContain('DangerousDcsPayload');
+    
     // Verify style reset is appended to prevent leaks
     expect(lines[1].endsWith('\x1b[0m')).toBe(true);
   });

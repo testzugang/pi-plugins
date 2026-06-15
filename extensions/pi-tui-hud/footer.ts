@@ -44,11 +44,17 @@ function isSafeSgr(paramsStr: string): boolean {
 }
 
 function sanitizeStatusText(text: string): string {
+  // 1. Translate 8-bit C1 controls to 7-bit ESC equivalents to ensure complete payload stripping
+  let clean = text
+    .replace(/\u009b/g, '\x1b[')
+    .replace(/\u009d/g, '\x1b]')
+    .replace(/\u0090/g, '\x1bP');
+
   const sgrCodes: string[] = [];
   const tokenPrefix = `__HUD_SGR_SAFE_COLOR_TOKEN_${Math.random().toString(36).slice(2)}__`;
   
-  // 1. Extract and mask ONLY approved SGR color codes, discard blink/hidden/other SGRs
-  let clean = text.replace(/\x1b\[([0-9;]*)m/g, (match, paramsStr) => {
+  // 2. Extract and mask ONLY approved SGR color and style formatting codes, discard blink/hidden/other SGRs
+  clean = clean.replace(/\x1b\[([0-9;]*)m/g, (match, paramsStr) => {
     if (isSafeSgr(paramsStr)) {
       sgrCodes.push(match);
       return `${tokenPrefix}${sgrCodes.length - 1}__`;
@@ -56,29 +62,29 @@ function sanitizeStatusText(text: string): string {
     return '';
   });
 
-  // 2. Strip all other CSI sequences (like \x1b[2J or \x1b[?1049h or \x1b[0 q) including intermediate spaces and full parameter range
+  // 3. Strip all other CSI sequences (like \x1b[2J or \x1b[?1049h or \x1b[0 q) including intermediate spaces and full parameter range
   clean = clean.replace(/\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]/g, '');
 
-  // 3. Strip OSC sequences safely even if incomplete (stops at next \x1b or end of string if no BEL/ST)
+  // 4. Strip OSC sequences safely even if incomplete (stops at next \x1b or end of string if no BEL/ST)
   clean = clean.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?/g, '');
 
-  // 4. Strip DCS sequences (Device Control String, starts with \x1bP and ends with \x1b\ or \u009c) including arbitrary length payload
+  // 5. Strip DCS sequences (Device Control String, starts with \x1bP and ends with \x1b\ or \u009c) including arbitrary length payload
   clean = clean.replace(/\x1bP[^\x1b\u009c]*(?:\x1b\\|\u009c)?/g, '');
 
-  // 5. Strip all other ESC sequences (SS2, SS3, charsets, etc.)
+  // 6. Strip all other ESC sequences (SS2, SS3, charsets, etc.)
   clean = clean.replace(/\x1b[\x20-\x2f]*[\x30-\x7e]/g, '');
 
-  // 6. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f, and C1 8-bit controls 0x80-0x9f) including tab (0x09)
+  // 7. Unconditionally strip all remaining ESC (0x1b) chars and other dangerous controls (0x00-0x1f, 0x7f, and C1 8-bit controls 0x80-0x9f) including tab (0x09)
   clean = clean.replace(/\x1b/g, ' ');
   clean = clean.replace(/[\x00-\x09\x0a-\x1a\x1c-\x1f\x7f\x80-\x9f]/g, ' ');
 
-  // 6. Restore masked safe SGR color codes
+  // 8. Restore masked safe SGR color codes
   const restoreRegex = new RegExp(`${tokenPrefix}(\\d+)__`, 'g');
   clean = clean.replace(restoreRegex, (_, idx) => {
     return sgrCodes[parseInt(idx, 10)] || '';
   });
 
-  // 7. Normalize whitespace
+  // 9. Normalize whitespace
   return clean.replace(/ +/g, ' ').trim();
 }
 
