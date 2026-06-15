@@ -324,6 +324,40 @@ describe('footer registration and rendering', () => {
     expect(visibleWidth(extremeLines[0])).toBe(3);
   });
 
+  it('should cache cumulative usage outside render while history is unchanged', () => {
+    vi.mocked(readEffectiveSettings).mockReturnValue({
+      enabled: true,
+      breadcrumb: 'inner',
+      footer: true,
+      header: true,
+      'header-info': false,
+    });
+
+    let footerRendererFactory: any = null;
+    mockCtx.ui.setFooter.mockImplementation((factory: any) => {
+      footerRendererFactory = factory;
+    });
+
+    registerFooter(mockPi);
+    sessionStartHandler({}, mockCtx);
+
+    const mockTui = { requestRender: vi.fn() };
+    const mockTheme = { fg: (token: string, text: string) => text, bold: (text: string) => text };
+    const mockFooterData = {
+      getGitBranch: () => 'main',
+      onBranchChange: () => vi.fn(),
+      getExtensionStatuses: () => new Map(),
+    };
+
+    const renderer = footerRendererFactory(mockTui, mockTheme, mockFooterData);
+    mockCtx.sessionManager.getEntries.mockClear();
+
+    renderer.render(80);
+    renderer.render(80);
+
+    expect(mockCtx.sessionManager.getEntries).not.toHaveBeenCalled();
+  });
+
   it('should handle live streaming usage and request render on message updates', () => {
     let agentStartHandler: Function = () => {};
     let messageUpdateHandler: Function = () => {};
@@ -387,6 +421,8 @@ describe('footer registration and rendering', () => {
     // Mock getContextUsage to null so it falls back to cumulative + live calculations
     mockCtx.getContextUsage.mockReturnValue(null);
 
+    mockCtx.sessionManager.getEntries.mockClear();
+
     // Render footer during message update and verify live streaming tokens are accumulated
     const lines = renderer.render(80);
     // Cumulative (15k + 5k input/output) + Live (2k + 1k input/output) = 23k total tokens
@@ -394,6 +430,7 @@ describe('footer registration and rendering', () => {
     expect(lines[0]).toContain('↑12k'); // Cumulative 10k + Live 2k = 12k
     expect(lines[0]).toContain('↓6k'); // Cumulative 5k + Live 1k = 6k
     expect(lines[0]).toContain('$0.200'); // Cumulative 0.15 + Live 0.05 = 0.20
+    expect(mockCtx.sessionManager.getEntries).not.toHaveBeenCalled();
 
     // Trigger message_end
     messageEndHandler();

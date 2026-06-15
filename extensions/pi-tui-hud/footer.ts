@@ -106,6 +106,39 @@ function renderContextUsage(theme: Theme, ratio: number | null, text: string): s
   return theme.fg('success', text);
 }
 
+type UsageTotals = {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  cost: number;
+};
+
+function emptyUsageTotals(): UsageTotals {
+  return { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, cost: 0 };
+}
+
+function addUsage(totals: UsageTotals, usage: any): UsageTotals {
+  if (!usage) return totals;
+  return {
+    input: totals.input + (usage.input || 0),
+    output: totals.output + (usage.output || 0),
+    cacheRead: totals.cacheRead + (usage.cacheRead || 0),
+    cacheWrite: totals.cacheWrite + (usage.cacheWrite || 0),
+    cost: totals.cost + (usage.cost?.total || 0),
+  };
+}
+
+function collectAssistantUsage(ctx: ExtensionContext): UsageTotals {
+  let totals = emptyUsageTotals();
+  for (const entry of ctx.sessionManager.getEntries()) {
+    if (entry.type === 'message' && entry.message.role === 'assistant') {
+      totals = addUsage(totals, (entry.message as any).usage);
+    }
+  }
+  return totals;
+}
+
 export function registerFooter(pi: ExtensionAPI) {
   let isStreaming = false;
   let liveUsage: any = null;
@@ -113,6 +146,8 @@ export function registerFooter(pi: ExtensionAPI) {
   let unsubSettings: (() => void) | null = null;
   let cachedSettings = DEFAULT_SETTINGS;
   let footerEnabled = false;
+  let activeCtx: ExtensionContext | null = null;
+  let cumulativeUsage = emptyUsageTotals();
 
   function runtimeSettings() {
     return { hudEnabled: pi.getFlag('hud') !== false };
@@ -121,7 +156,9 @@ export function registerFooter(pi: ExtensionAPI) {
   function enable(ctx: ExtensionContext) {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
     footerEnabled = true;
+    activeCtx = ctx;
     cachedSettings = readEffectiveSettings(ctx.cwd, runtimeSettings());
+    cumulativeUsage = collectAssistantUsage(ctx);
 
     ctx.ui.setFooter((tui: any, theme: any, footerData: any) => {
       liveTui = tui;
@@ -139,27 +176,14 @@ export function registerFooter(pi: ExtensionAPI) {
           const gitSegment = branch ? theme.fg('success', theme.bold(withIcon('⎇', branch))) : '';
 
           // Read cumulative stats (Input, Output, Cache, Costs)
-          let totalInput = 0, totalOutput = 0, totalCacheRead = 0, totalCacheWrite = 0, totalCost = 0;
-          for (const entry of ctx.sessionManager.getEntries()) {
-            if (entry.type === 'message' && entry.message.role === 'assistant') {
-              const m = entry.message as any;
-              if (m.usage) {
-                totalInput += m.usage.input || 0;
-                totalOutput += m.usage.output || 0;
-                totalCacheRead += m.usage.cacheRead || 0;
-                totalCacheWrite += m.usage.cacheWrite || 0;
-                totalCost += m.usage.cost?.total || 0;
-              }
-            }
-          }
-
-          if (isStreaming && liveUsage) {
-            totalInput += liveUsage.input || 0;
-            totalOutput += liveUsage.output || 0;
-            totalCacheRead += liveUsage.cacheRead || 0;
-            totalCacheWrite += liveUsage.cacheWrite || 0;
-            totalCost += liveUsage.cost?.total || 0;
-          }
+          const totalUsage = isStreaming && liveUsage
+            ? addUsage(cumulativeUsage, liveUsage)
+            : cumulativeUsage;
+          const totalInput = totalUsage.input;
+          const totalOutput = totalUsage.output;
+          const totalCacheRead = totalUsage.cacheRead;
+          const totalCacheWrite = totalUsage.cacheWrite;
+          const totalCost = totalUsage.cost;
 
           // Build context percentage
           const contextUsage = ctx.getContextUsage();
@@ -229,6 +253,7 @@ export function registerFooter(pi: ExtensionAPI) {
 
   function disable(ctx: ExtensionContext) {
     footerEnabled = false;
+    activeCtx = null;
     liveTui = null;
     if (ctx && ctx.hasUI && ctx.ui) {
       ctx.ui.setFooter(undefined);
@@ -278,8 +303,14 @@ export function registerFooter(pi: ExtensionAPI) {
     }
   });
 
-  pi.on('message_end', () => {
+  pi.on('message_end', (event) => {
     isStreaming = false;
+    if (event?.message?.usage) {
+      cumulativeUsage = addUsage(cumulativeUsage, event.message.usage);
+    } else if (activeCtx) {
+      cumulativeUsage = collectAssistantUsage(activeCtx);
+    }
+    liveUsage = null;
     liveTui?.requestRender();
   });
 
