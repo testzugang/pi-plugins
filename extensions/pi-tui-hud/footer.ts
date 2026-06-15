@@ -51,6 +51,7 @@ function sanitizeStatusText(text: string): string {
     .replace(/\u0090/g, '\x1bP')
     .replace(/\u009e/g, '\x1b^')
     .replace(/\u009f/g, '\x1b_')
+    .replace(/\u0098/g, '\x1bX')
     .replace(/\u009c/g, '\x1b\\');
 
   const sgrCodes: string[] = [];
