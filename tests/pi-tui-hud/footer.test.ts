@@ -286,6 +286,7 @@ describe('footer registration and rendering', () => {
     let agentStartHandler: Function = () => {};
     let messageUpdateHandler: Function = () => {};
     let messageEndHandler: Function = () => {};
+    let sessionShutdownHandler: Function = () => {};
 
     mockPi.on.mockImplementation((event: string, handler: Function) => {
       if (event === 'session_start') {
@@ -296,6 +297,8 @@ describe('footer registration and rendering', () => {
         messageUpdateHandler = handler;
       } else if (event === 'message_end') {
         messageEndHandler = handler;
+      } else if (event === 'session_shutdown') {
+        sessionShutdownHandler = handler;
       }
     });
 
@@ -311,6 +314,10 @@ describe('footer registration and rendering', () => {
     mockCtx.ui.setFooter.mockImplementation((factory: any) => {
       footerRendererFactory = factory;
     });
+
+    // Mock events.on unsubscribe
+    const unsubMock = vi.fn();
+    mockPi.events.on.mockReturnValue(unsubMock);
 
     registerFooter(mockPi);
     sessionStartHandler({}, mockCtx);
@@ -352,5 +359,9 @@ describe('footer registration and rendering', () => {
 
     // Trigger dispose and verify safe cleanup
     renderer.dispose();
+
+    // Trigger session shutdown and verify unsubscribe is called
+    sessionShutdownHandler({}, mockCtx);
+    expect(unsubMock).toHaveBeenCalled();
   });
 });

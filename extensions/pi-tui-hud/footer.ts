@@ -102,6 +102,7 @@ export function registerFooter(pi: ExtensionAPI) {
   let isStreaming = false;
   let liveUsage: any = null;
   let liveTui: any = null;
+  let unsubSettings: (() => void) | null = null;
 
   pi.on('session_start', (_event, ctx: ExtensionContext) => {
     if (!ctx.hasUI) return;
@@ -223,6 +224,16 @@ export function registerFooter(pi: ExtensionAPI) {
         }
       };
     });
+
+    if (unsubSettings) {
+      unsubSettings();
+    }
+
+    unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
+      if (changeCtx && liveTui) {
+        liveTui.requestRender();
+      }
+    });
   });
 
   pi.on('agent_start', () => { 
@@ -247,9 +258,10 @@ export function registerFooter(pi: ExtensionAPI) {
     liveTui?.requestRender();
   });
 
-  pi.events.on('hud_settings_changed', (changeCtx) => {
-    if (changeCtx && liveTui) {
-      liveTui.requestRender();
+  pi.on('session_shutdown', () => {
+    if (unsubSettings) {
+      unsubSettings();
+      unsubSettings = null;
     }
   });
 }
