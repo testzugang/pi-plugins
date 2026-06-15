@@ -1,27 +1,49 @@
-import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
+import type { ExtensionAPI, ExtensionContext, Theme } from '@earendil-works/pi-coding-agent';
 import { CustomEditor } from '@earendil-works/pi-coding-agent';
 import { visibleWidth, truncateToWidth, Text } from '@earendil-works/pi-tui';
-import { getBreadcrumbData, renderBreadcrumbInfo } from './breadcrumb';
-import { readSettings } from './settings';
+import { getBreadcrumbData, renderBreadcrumbInfo, type BreadcrumbData } from './breadcrumb';
+import { readSettings, type HudSettings } from './settings';
 import { isExtensionContext } from './utils';
 
-let currentTheme: any = null;
-let breadcrumbMode = 'inner';
-let liveCtx: ExtensionContext | null = null;
+export interface HudEditorState {
+  breadcrumbData: BreadcrumbData | null;
+  theme: Theme | null;
+  breadcrumbMode: HudSettings['breadcrumb'];
+  thinkingLevel: string;
+}
+
 let liveEditorTui: any = null;
-let liveThinkingLevel = 'off';
+let activeEditorState: HudEditorState | null = null;
+
+function createEditorState(ctx: ExtensionContext, thinkingLevel: string, breadcrumbMode: HudSettings['breadcrumb']): HudEditorState {
+  return {
+    breadcrumbData: getBreadcrumbData(ctx, thinkingLevel),
+    theme: ctx.ui?.theme ?? null,
+    breadcrumbMode,
+    thinkingLevel,
+  };
+}
 
 export class HudCustomEditor extends CustomEditor {
+  private readonly hudState: HudEditorState;
+
+  constructor(tui: any, theme: any, keybindings: any, state: HudEditorState & { ctx?: ExtensionContext | null }) {
+    super(tui, theme, keybindings);
+    this.hudState = {
+      ...state,
+      breadcrumbData: state.breadcrumbData ?? getBreadcrumbData(state.ctx ?? null, state.thinkingLevel),
+    };
+  }
+
   render(width: number): string[] {
     const lines = super.render(width);
     if (lines.length < 3) return lines;
 
     const result = [...lines];
-    const theme = liveCtx?.ui?.theme || currentTheme;
+    const { breadcrumbData, theme, breadcrumbMode } = this.hudState;
 
-    if (breadcrumbMode === 'inner' && liveCtx && theme) {
-      const data = getBreadcrumbData(liveCtx, liveThinkingLevel);
-      const infoPart = renderBreadcrumbInfo(data, theme);
+    if (breadcrumbMode === 'inner' && breadcrumbData && theme) {
+      const infoPart = renderBreadcrumbInfo(breadcrumbData, theme);
       const infoWidth = visibleWidth(infoPart);
       
       let paddingLen = width - 7 - infoWidth;
@@ -54,12 +76,17 @@ export function registerEditor(pi: ExtensionAPI) {
   let editorEnabled = false;
   let unsubSettings: (() => void) | null = null;
 
+  function currentThinkingLevel() {
+    return pi.getThinkingLevel() || 'off';
+  }
+
   function updateTopWidget(ctx: ExtensionContext) {
     if (!ctx.hasUI || !ctx.ui) return;
     const s = readSettings(ctx.cwd);
+    const thinkingLevel = activeEditorState?.thinkingLevel ?? currentThinkingLevel();
     if (s.enabled && s.breadcrumb === 'top') {
-      ctx.ui.setWidget('hud-breadcrumb-widget', (tui, theme) => {
-        const data = getBreadcrumbData(ctx, liveThinkingLevel);
+      ctx.ui.setWidget('hud-breadcrumb-widget', (_tui, theme) => {
+        const data = getBreadcrumbData(ctx, thinkingLevel);
         return new Text(renderBreadcrumbInfo(data, theme), 0, 0);
       }, { placement: 'aboveEditor' });
     } else {
@@ -67,20 +94,22 @@ export function registerEditor(pi: ExtensionAPI) {
     }
   }
 
+  function setInnerEditor(ctx: ExtensionContext) {
+    if (!activeEditorState) return;
+    const capturedState = activeEditorState;
+    ctx.ui.setEditorComponent((tui: any, theme: any, keybindings: any) => {
+      liveEditorTui = tui;
+      return new HudCustomEditor(tui, theme, keybindings, { ...capturedState, theme });
+    });
+  }
+
   function enable(ctx: ExtensionContext) {
     editorEnabled = true;
-    liveCtx = ctx;
-    liveThinkingLevel = pi.getThinkingLevel() || 'off';
-    currentTheme = ctx.ui.theme;
-    
     const s = readSettings(ctx.cwd);
-    breadcrumbMode = s.breadcrumb;
+    activeEditorState = createEditorState(ctx, currentThinkingLevel(), s.breadcrumb);
 
     if (s.breadcrumb === 'inner') {
-      ctx.ui.setEditorComponent((tui: any, theme: any, keybindings: any) => {
-        liveEditorTui = tui;
-        return new HudCustomEditor(tui, theme, keybindings);
-      });
+      setInnerEditor(ctx);
     } else {
       ctx.ui.setEditorComponent(undefined);
     }
@@ -89,9 +118,7 @@ export function registerEditor(pi: ExtensionAPI) {
 
   function disable(ctx: ExtensionContext) {
     editorEnabled = false;
-    liveCtx = null;
-    liveThinkingLevel = 'off';
-    currentTheme = null;
+    activeEditorState = null;
     liveEditorTui = null;
     if (ctx && ctx.hasUI && ctx.ui) {
       ctx.ui.setEditorComponent(undefined);
@@ -122,15 +149,10 @@ export function registerEditor(pi: ExtensionAPI) {
       } else if (!updatedSettings.enabled && editorEnabled) {
         disable(changeCtx);
       } else if (editorEnabled) {
-        liveCtx = changeCtx;
-        liveThinkingLevel = pi.getThinkingLevel() || 'off';
-        breadcrumbMode = updatedSettings.breadcrumb;
+        activeEditorState = createEditorState(changeCtx, currentThinkingLevel(), updatedSettings.breadcrumb);
         
         if (updatedSettings.breadcrumb === 'inner') {
-          changeCtx.ui.setEditorComponent((tui: any, theme: any, keybindings: any) => {
-            liveEditorTui = tui;
-            return new HudCustomEditor(tui, theme, keybindings);
-          });
+          setInnerEditor(changeCtx);
         } else {
           changeCtx.ui.setEditorComponent(undefined);
           liveEditorTui = null;
@@ -145,9 +167,14 @@ export function registerEditor(pi: ExtensionAPI) {
   pi.on('model_select', (_event, ctx) => {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
     if (editorEnabled) {
-      liveCtx = ctx;
-      liveThinkingLevel = pi.getThinkingLevel() || 'off';
-      breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
+      const breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
+      activeEditorState = createEditorState(ctx, currentThinkingLevel(), breadcrumbMode);
+      if (breadcrumbMode === 'inner') {
+        setInnerEditor(ctx);
+      } else {
+        ctx.ui.setEditorComponent(undefined);
+        liveEditorTui = null;
+      }
       updateTopWidget(ctx);
       liveEditorTui?.requestRender();
     }
@@ -156,9 +183,15 @@ export function registerEditor(pi: ExtensionAPI) {
   pi.on('thinking_level_select', (event, ctx) => {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
     if (editorEnabled) {
-      liveCtx = ctx;
-      liveThinkingLevel = event.level || pi.getThinkingLevel() || 'off';
-      breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
+      const breadcrumbMode = readSettings(ctx.cwd).breadcrumb;
+      const thinkingLevel = event.level || currentThinkingLevel();
+      activeEditorState = createEditorState(ctx, thinkingLevel, breadcrumbMode);
+      if (breadcrumbMode === 'inner') {
+        setInnerEditor(ctx);
+      } else {
+        ctx.ui.setEditorComponent(undefined);
+        liveEditorTui = null;
+      }
       updateTopWidget(ctx);
       liveEditorTui?.requestRender();
     }
