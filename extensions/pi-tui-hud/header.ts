@@ -2,6 +2,7 @@ import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-a
 import { truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
 import { readSettings, DEFAULT_SETTINGS } from './settings';
 import { sanitizePlainText } from './breadcrumb';
+import { isExtensionContext } from './utils';
 
 function parseHex(hex: string): { r: number; g: number; b: number } | null {
   const clean = hex.startsWith('#') ? hex.slice(1) : hex;
@@ -100,7 +101,7 @@ export function registerHeader(pi: ExtensionAPI) {
     }
 
     unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
-      if (!changeCtx || !changeCtx.hasUI || !changeCtx.ui) return;
+      if (!isExtensionContext(changeCtx)) return;
       
       const updatedSettings = readSettings(changeCtx.cwd);
       cachedSettings = updatedSettings;

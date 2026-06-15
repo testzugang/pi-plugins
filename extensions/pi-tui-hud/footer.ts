@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
 import { readSettings, DEFAULT_SETTINGS } from './settings';
-import { withIcon } from './utils';
+import { withIcon, isExtensionContext } from './utils';
 import { visibleWidth, truncateToWidth } from '@earendil-works/pi-tui';
 
 function isSafeSgr(paramsStr: string): boolean {
@@ -254,7 +254,7 @@ export function registerFooter(pi: ExtensionAPI) {
     }
 
     unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
-      if (!changeCtx || typeof changeCtx !== 'object' || !('cwd' in changeCtx)) return;
+      if (!isExtensionContext(changeCtx)) return;
       
       const updatedSettings = readSettings(changeCtx.cwd);
       cachedSettings = updatedSettings;

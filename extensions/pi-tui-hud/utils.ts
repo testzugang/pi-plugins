@@ -1,4 +1,20 @@
 import { env } from 'node:process';
+import type { ExtensionContext } from '@earendil-works/pi-coding-agent';
+
+export function isExtensionContext(val: unknown): val is ExtensionContext {
+  return (
+    typeof val === 'object' &&
+    val !== null &&
+    'cwd' in val &&
+    typeof (val as any).cwd === 'string' &&
+    'hasUI' in val &&
+    typeof (val as any).hasUI === 'boolean' &&
+    'ui' in val &&
+    typeof (val as any).ui === 'object' &&
+    (val as any).ui !== null &&
+    'theme' in (val as any).ui
+  );
+}
 
 export function hasNerdFonts(): boolean {
   const nf = env.NERD_FONTS;

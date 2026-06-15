@@ -46,6 +46,9 @@ describe('gradient logo header', () => {
       hasUI: true,
       ui: {
         setHeader: vi.fn(),
+        theme: {
+          fg: (token: string, text: string) => `[${token}]${text}`,
+        },
       },
       model: { id: 'claude-3-5' },
     };

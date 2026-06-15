@@ -3,23 +3,12 @@ import { CustomEditor } from '@earendil-works/pi-coding-agent';
 import { visibleWidth, truncateToWidth, Text } from '@earendil-works/pi-tui';
 import { getBreadcrumbData, renderBreadcrumbInfo } from './breadcrumb';
 import { readSettings } from './settings';
+import { isExtensionContext } from './utils';
 
 let currentTheme: any = null;
 let breadcrumbMode = 'inner';
 let liveCtx: ExtensionContext | null = null;
 let liveEditorTui: any = null;
-
-function isExtensionContext(val: unknown): val is ExtensionContext {
-  return (
-    typeof val === 'object' &&
-    val !== null &&
-    'cwd' in val &&
-    'ui' in val &&
-    typeof (val as any).ui === 'object' &&
-    (val as any).ui !== null &&
-    'theme' in (val as any).ui
-  );
-}
 
 export class HudCustomEditor extends CustomEditor {
   render(width: number): string[] {
