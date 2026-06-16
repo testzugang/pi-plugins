@@ -93,6 +93,27 @@ describe('gradient logo header', () => {
     expect(gradient).toContain(text);
   });
 
+  it('should reuse cached gradient work for repeated identical inputs', () => {
+    const segmentSpy = vi.spyOn(Intl.Segmenter.prototype, 'segment');
+
+    const first = getGradientText('CACHE-REUSE-ONE', '#112233', '#445566');
+    const second = getGradientText('CACHE-REUSE-ONE', '#112233', '#445566');
+
+    expect(second).toBe(first);
+    expect(segmentSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should invalidate cached gradient work when text or colors change', () => {
+    const segmentSpy = vi.spyOn(Intl.Segmenter.prototype, 'segment');
+
+    getGradientText('CACHE-INVALIDATE-ONE', '#112233', '#445566');
+    getGradientText('CACHE-INVALIDATE-ONE', '#112233', '#445566');
+    getGradientText('CACHE-INVALIDATE-TWO', '#112233', '#445566');
+    getGradientText('CACHE-INVALIDATE-TWO', '#112233', '#778899');
+
+    expect(segmentSpy).toHaveBeenCalledTimes(3);
+  });
+
   it('should render colored gradient bar and verify mathematical centering', () => {
     const logoText = 'PI AGENT';
     const width = 80;

@@ -4,10 +4,30 @@ import { readEffectiveSettings, DEFAULT_SETTINGS } from './settings';
 import { sanitizePlainText } from './breadcrumb';
 import { isExtensionContext, parseHex } from './utils';
 
+const GRADIENT_TEXT_CACHE_LIMIT = 128;
+const gradientTextCache = new Map<string, string>();
+
+function cacheGradientText(key: string, value: string): string {
+  if (gradientTextCache.size >= GRADIENT_TEXT_CACHE_LIMIT) {
+    const oldestKey = gradientTextCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      gradientTextCache.delete(oldestKey);
+    }
+  }
+  gradientTextCache.set(key, value);
+  return value;
+}
+
 export function getGradientText(text: string, startHex: string, endHex: string): string {
+  const cacheKey = JSON.stringify([text, startHex, endHex]);
+  const cached = gradientTextCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
+  }
+
   const start = parseHex(startHex);
   const end = parseHex(endHex);
-  if (!start || !end) return text;
+  if (!start || !end) return cacheGradientText(cacheKey, text);
 
   let result = '';
   // Use Intl.Segmenter for grapheme-cluster safe splitting (protects ZWJ, skin tones, etc.)
@@ -21,7 +41,7 @@ export function getGradientText(text: string, startHex: string, endHex: string):
     const b = Math.round(start.b + ratio * (end.b - start.b));
     result += `\x1b[38;2;${r};${g};${b}m${segments[i]}\x1b[39m`;
   }
-  return result;
+  return cacheGradientText(cacheKey, result);
 }
 
 export function generateGradientHeader(logoText: string, width: number): string {
