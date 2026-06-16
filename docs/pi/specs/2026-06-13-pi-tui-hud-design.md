@@ -2,43 +2,39 @@
 
 ## 1. Übersicht & Zielsetzung
 
-Die `pi-tui-hud` Extension ist eine sichere, modulare und transparente Implementierung eines Heads-Up-Displays (HUD) für den Pi Coding Agent. Sie dient als vollständiger, sicherer Ersatz ("Safe-by-Design Clean Rewrite") der infizierten und unter Quarantäne gestellten `pi-powerline`-Erweiterung.
+`pi-tui-hud` ist eine sichere, modulare HUD-Extension für den Pi Coding Agent. Sie ersetzt die quarantänisierte `pi-powerline`-Extension durch auditierbaren TypeScript-Code ohne vorkompilierte, gepackte oder obfuskierte Payloads.
 
-Die Ziele von `pi-tui-hud` sind:
-- **Sicherheits-Garantie**: Vollständiger Verzicht auf vorkompilierte, gepackte oder obfuskierte Binärdaten (wie sie in der alten Extension vorkamen). 100 % lesbarer und auditierbarer TypeScript-Code.
-- **Vollständiges Powerline-Replica**: Nahtlose Rekonstruktion des beliebten Terminal-Designs mit segmentiertem Footer, Gradient-Header und im Editor eingebetteten Breadcrumbs.
-- **Echtzeit-Tokenmaxxing & Kosten-Transparenz**: Eine genaue Live-Visualisierung der genutzten Tokens, des Cache-Status und der kumulierten Session-Kosten während des LLM-Streamings.
-- **Konfigurations-Flexibilität**: Flexible Steuerung aller visuellen Elemente über dedizierte Konfigurationsdateien und einen integrierten Slash-Command.
+Ziele:
 
----
+- **Sicherheit:** Kein verdeckter Code, keine Netzwerkaktivität, keine Shell-Ausführung.
+- **HUD-Darstellung:** Gradient-Header, Powerline-ähnlicher Footer und Breadcrumbs im Editor oder als Widget.
+- **Transparenz:** Live-Kontextauslastung, kumulierte Tokens, Cache-Hit-Rate und Session-Kosten.
+- **Reaktive Konfiguration:** Slash-Command-Änderungen wirken im aktiven TUI ohne Render-Hotpath-Dateizugriffe.
 
-## 2. Technische Details & Architektur
+## 2. Architektur
 
-### 2.1 Verzeichnis- und Dateistruktur
-
-Alle Quellcodedateien werden lokal im Monorepo-Workspace abgelegt und direkt geladen:
-
-```
+```text
 extensions/pi-tui-hud/
-├── index.ts          # Haupteinstiegspunkt, Flag-Registrierung, Slash-Command
-├── settings.ts       # Ladet und speichert Konfigurationen (global & lokal)
-├── footer.ts         # Custom Footer Renderer (Git, Tokens, Kosten, Statuses)
-├── header.ts         # Custom Header Renderer (Gradient, Diagnostic Info)
-├── editor.ts         # Editor Patching / Breadcrumb-Integration
-├── breadcrumb.ts     # Logik für Breadcrumb-Berechnung und Rendering
-└── utils.ts          # Hilfsfunktionen (Nerd-Font Abfrage, Styling-Hilfen)
+├── index.ts       # Einstiegspunkt, Flag-Registrierung, Slash-Command
+├── settings.ts    # Persistierte + effektive Settings, Validierung
+├── footer.ts      # Footer-Renderer, Usage-/Status-Caches, Event-Reaktionen
+├── header.ts      # Gradient-Header, Header-Info, Gradient-Memoization
+├── editor.ts      # CustomEditor-Integration, Breadcrumb-State pro Editor-Instanz
+├── breadcrumb.ts  # Breadcrumb-Daten, Sanitization, Rendering
+└── utils.ts       # Typguards, Nerd-Font-Erkennung, Hex-Farben
 ```
 
-### 2.2 Speicherort & Konfigurationsformat
+Komponenten registrieren sich über Pi-Events (`session_start`, `hud_settings_changed`, `model_select`, `thinking_level_select`, `agent_start`, `message_update`, `message_end`, `session_shutdown`) und stellen native UI-Komponenten über `ctx.ui.setHeader`, `ctx.ui.setFooter`, `ctx.ui.setEditorComponent` und `ctx.ui.setWidget` bereit.
 
-Es gibt zwei getrennte Persistenz-Ebenen für die Einstellungen:
+## 3. Konfiguration
 
-1. **Globale Standardkonfiguration**:
-   - **Datei**: `~/.pi/agent/hud/settings.json`
-2. **Projektlokale Overrides**:
-   - **Datei**: `.pi/hud.json` im aktuellen Repository (CWD).
+Persistenz-Ebenen:
 
-#### JSON-Format der Konfiguration:
+1. Global: `~/.pi/agent/hud/settings.json`
+2. Projektlokal: `.pi/hud.json` im aktuellen CWD
+
+Projektlokale Werte überschreiben globale Werte. Runtime-Flags werden zusätzlich über `readEffectiveSettings()` angewendet; `--hud=false` erzwingt `enabled: false`, ohne die persistierte Konfiguration zu verändern.
+
 ```json
 {
   "enabled": true,
@@ -48,73 +44,100 @@ Es gibt zwei getrennte Persistenz-Ebenen für die Einstellungen:
   "header-info": false
 }
 ```
-- `breadcrumb`: Unterstützt `"hide"`, `"top"` (als Widget über dem Editor) oder `"inner"` (direkt in die obere Rahmenlinie des TUI-Editors integriert).
-- `header-info`: Zeigt zusätzliche diagnostische Details im Header an, wenn auf `true` gesetzt.
 
----
+Settings werden validiert. Ungültige Werte werden ignoriert und per Warnung gemeldet. `writeSetting()` persistiert nur validierte lokale Overrides.
 
-## 3. Funktionsweise der Komponenten
+## 4. Komponentenverhalten
 
-### 3.1 `settings.ts` (Konfigurations-Manager)
-- Lädt die Einstellungen sequenziell: Standardwerte ➜ Globale Konfiguration ➜ Lokale Overrides.
-- Exportiert eine `saveSettings()`-Funktion, die zur Laufzeit geänderte Einstellungen (z. B. via Slash-Command) sicher persistiert.
+### 4.1 Header
 
-### 3.2 `footer.ts` (Fortschrittlicher TUI-Footer)
-- Ersetzt den standardmäßigen Pi-Footer über die Schnittstelle `ctx.ui.setFooter(renderer)`.
-- **Echtzeit-Streaming-Integration:** 
-  - Hört auf `agent_start`, `message_update` und `message_end` Events.
-  - Summiert alle Tokens bereits persistierter Assistant-Turns im Verlauf des SessionManagers.
-  - Fusioniert diese Zahlen live während des Streamings mit der temporären Auslastung (`liveAssistantUsage`).
-- **Berechnungen & Formatierung:**
-  - Zeigt die relative Context-Auslastung in Prozent relativ zum maximalen Window des Modells an.
-  - Wendet Schwellenwert-Färbungen an (TUI-Themenfarben): Gelb (`warning`) ab 70 % Auslastung, Rot (`error`) ab 90 % Auslastung.
-  * Berechnet die Cache-Hit-Rate (`cacheRead / promptTokens * 100`) und zeigt diese an, sobald Caching aktiv ist.
-  * Visualisiert akkumulierte Dollarkosten der Session.
-- **Layout-Aufbau:**
-  - **Zeile 1 (Status):**
-    `[Git-Branch (Grün)]  [Context-Auslastung] [Input ↑] [Output ↓] [Cache R/W] [Kosten]   ...padding...  [Reasoning Level (farbig)]`
-  - **Zeile 2 (Extension-Meldungen):**
-    Visualisiert registrierte Status-Strings anderer Extensions (z. B. Headroom).
+- Rendert `PI-TUI-HUD` mit Pink-zu-Cyan-Gradient (`#d787af` → `#00afaf`).
+- Nutzt `Intl.Segmenter`, damit Unicode-Grapheme, Emoji und ZWJ-Sequenzen nicht durch ANSI-Codes zerlegt werden.
+- Memoisiert `getGradientText(text, startHex, endHex)` nach exakt diesen Eingaben. Wiederholte Header-Renders vermeiden erneute Segmentierung und Farbinterpolation.
+- Fällt bei ungültigen Hex-Farben unverändert auf Plaintext zurück.
+- Optionales `header-info` zeigt Modell und CWD, beide vorher plaintext-sanitized.
 
-### 3.3 `header.ts` (Branding-Header)
-- Ersetzt den Standard-Header durch ein elegantes, zentriertes Logo mit ansprechendem Farbverlauf.
-- Zeigt bei aktiviertem `header-info` Systemdetails wie CWD, Modell-ID, Node-Version und aktive Extensions im Header-Widget an.
+### 4.2 Breadcrumb / Editor
 
-### 3.4 `editor.ts` & `breadcrumb.ts` (Breadcrumb-Integration)
-- Holt den aktuellen Zustand des Editors über Pi-interne Events.
-- Zeichnet den aktuellen Dateipfad sowie die Cursor-Zeilen- und Spaltenposition (`Line X, Col Y`).
-- Bietet zwei Layout-Modi:
-  - **`top`**: Ein separates TUI-Widget über dem Editor-Bereich.
-  - **`inner`**: Ein hochgradig integriertes Patching der oberen Editor-Randlinie des TUI, um die Information platzsparend und bündig direkt in den TUI-Rahmen zu zeichnen.
+Breadcrumb-Daten enthalten:
 
----
+- Modellname
+- Thinking-Level
+- aktueller Ordner
 
-## 4. Schnittstellen & Slash-Commands
+Darstellung:
 
-### 4.1 `/hud` Befehl
-Ein einheitlicher Slash-Command zur Steuerung des HUDs mit Autovervollständigung:
+- `breadcrumb: "inner"`: Breadcrumb wird in die obere Rahmenlinie des `CustomEditor` gezeichnet.
+- `breadcrumb: "top"`: Breadcrumb wird als Widget oberhalb des Editors gerendert.
+- `breadcrumb: "hide"`: Breadcrumb-Darstellung wird deaktiviert.
 
-- `/hud`: Schaltet das HUD masterseitig ein oder aus.
-- `/hud info`: Gibt den aktuellen Aktivitätsstatus aller Sub-Komponenten aus.
-- `/hud breadcrumb:<hide|top|inner>`: Wechselt den Darstellungsmodus der Breadcrumbs.
-- `/hud footer:<on|off>`: Schaltet den benutzerdefinierten Token-Footer an oder aus.
-- `/hud header:<on|off>`: Schaltet den Gradienten-Header an oder aus.
-- `/hud header-info:<on|off>`: Blendet Diagnoseinformationen im Header ein oder aus.
+Editor-State ist pro `HudCustomEditor`-Instanz snapshot-basiert. Alte Editor-Instanzen und alte Factory-Closures können dadurch kein neueres Modell, Thinking-Level, Folder oder Theme aus module-level mutable state anzeigen.
 
----
+### 4.3 Footer
 
-## 5. Sicherheitsgarantie & Auditing
+Der Footer zeigt in Zeile 1:
 
-Um die Sicherheitsbedenken der alten Powerline-Extension vollständig auszuräumen, verpflichtet sich `pi-tui-hud` zu folgenden strikten Richtlinien:
+```text
+[Git-Branch] [Context-Auslastung/Window] [Input ↑] [Output ↓] [Cache-Hit CH:%] [Kosten]
+```
 
-1. **Kein verdeckter Code:** Keine transpilierte `.js`-Ausgabe im Repository, kein Minifizieren und keine verschleierten Zeichenketten (`_0x...` oder Base64-Ausführungen).
-2. **Keine Netzwerkaktivität:** Das Plugin führt keinerlei ausgehende Netzwerk- oder Socket-Verbindungen aus (`fetch`, `http`, `curl` usw. sind absolut verboten).
-3. **Keine Shell-Injektionen:** Vollständiger Verzicht auf das Ausführen externer Shell-Prozesse (`child_process.exec` oder `spawn`). Alle Operationen werden nativ in TypeScript innerhalb des Pi-Agent-Prozesses abgewickelt.
+Der Footer zeigt **kein** Thinking-Level; Thinking-Level gehört zum Breadcrumb.
 
----
+Kontext-Farben:
 
-## 6. Testbarkeit & Qualitätssicherung
+- `< 50 %`: `success`
+- `50–69.9 %`: `accent`
+- `70–90 %`: `warning`
+- `> 90 %`: bold `error`
 
-- **Unit-Tests**: Abdeckung der mathematischen Token-Summierung, Cache-Hit-Raten-Ermittlung und Konfigurationsauflösung in `tests/pi-tui-hud/`.
-- **Manuelle TUI-Prüfung**: Visuelle Kontrolle des Layouts bei Fenstergrößenänderungen (Resize) und verschiedenen Terminal-Emulatoren (macOS Terminal, iTerm2, Kitty).
-- **Graceful Fallbacks**: Wenn ein Modell keine Reasoning-Tokens unterstützt oder das Context-Window unbekannt ist, fällt das Layout automatisch auf eine sichere Standard-Darstellung zurück.
+Usage-Verhalten:
+
+- Kumulierte Assistant-Usage wird außerhalb des Render-Hotpaths gecacht.
+- `render()` kombiniert nur gecachte kumulierte Usage mit aktueller Live-Usage.
+- `message_end` aktualisiert den Usage-Cache aus dem Event; nur bei fehlender Event-Usage wird aus der Session-History neu aufgebaut.
+- Identische `message_update`-Usage während Streaming triggert keinen redundanten Render.
+
+Extension-Statuszeile:
+
+- Status-Einträge werden sortiert, ANSI-/Control-Sequenzen sicher sanitisiert und als zweite Footer-Zeile gerendert.
+- Sortierte/sanitisierte Statusausgabe wird über Content-Signaturen gecacht.
+- Breiten-Truncation bleibt renderabhängig.
+
+## 5. Slash-Command
+
+`/hud` unterstützt:
+
+- `/hud` — HUD global umschalten.
+- `/hud info` — aktive Settings anzeigen.
+- `/hud breadcrumb:<hide|top|inner>` — Breadcrumb-Modus setzen.
+- `/hud footer:<on|off>` — Footer umschalten.
+- `/hud header:<on|off>` — Header umschalten.
+- `/hud header-info:<on|off>` — diagnostische Header-Zeile umschalten.
+
+Nach Änderungen wird `hud_settings_changed` ausgelöst, damit Header/Footer/Editor ohne Neustart aktualisieren.
+
+## 6. Sicherheit
+
+- Keine transpilierte/minifizierte Runtime-Ausgabe im Repository.
+- Keine Netzwerkzugriffe (`fetch`, `http`, `net`, `curl` etc.).
+- Keine Shell-Ausführung (`child_process.exec`, `spawn` etc.).
+- Lifecycle-Handler nutzen `isExtensionContext()`-Guards, bevor UI-Kontext verwendet wird.
+- Von externen Extensions gelieferte Statusstrings werden aggressiv von gefährlichen Terminal-Control-Sequenzen bereinigt; nur sichere SGR-Farb-/Style-Codes bleiben erhalten.
+
+## 7. Tests & Verifikation
+
+Automatisierte Tests liegen unter `tests/pi-tui-hud/` und decken ab:
+
+- Settings-Validierung, persistierte vs effektive Settings.
+- Hex-Farbparser und Terminal-Farbhelper.
+- Breadcrumb-Sanitization, Modell/Thinking/Folder-Rendering.
+- Editor-State-Isolation und Widget-/Inner-Breadcrumb-Verhalten.
+- Header-Gradient, Unicode-Grapheme, invalid Hex fallback, Gradient-Memoization.
+- Footer-Usage-Berechnung, Status-Sanitization, Status-Cache, Live-Usage-Render-Dedupe.
+
+Standard-Verifikation:
+
+```bash
+npx vitest run tests/pi-tui-hud
+npm run validate
+```

@@ -1,31 +1,45 @@
 # pi-tui-hud 🗜️
 
-> **Secure, high-fidelity HUD and Status Bar for Pi.** Real-time token tracking, cumulative cost accounting, model-to-folder breadcrumbs, and gradient logo headers.
+Secure, high-fidelity HUD status bar for Pi. Real-time token tracking, cumulative cost accounting, model/thinking/folder breadcrumbs, memoized gradient logo header.
 
-`pi-tui-hud` is a 100% secure, transparent, and audited alternative to the quarantined `pi-powerline` extension. It is built purely in TypeScript, runs entirely inside your Pi process, and has zero external binary or network dependencies.
+`pi-tui-hud` is a transparent TypeScript alternative to the quarantined `pi-powerline` extension. It runs inside the Pi process and uses no external binary or network dependencies.
 
 ## ✨ Features
 
-- **True Gradient Logo Header**: Smooth character-by-character color interpolation (Pink `#d787af` ➜ Cyan `#00afaf`) using `Intl.Segmenter` and `visibleWidth` to perfectly preserve complex Unicode emoji/grapheme boundaries.
-- **Segmented TUI Footer**: Displays a bold highlighted git branch, cumulative session costs (`$X.XXX`), cache hit rates (`CH:XX.X%`), cumulative tokens (↑/↓), and current context usage with threshold colors: success (<50%), accent (50–69.9%), warning (70–90%), and bold error (>90%).
-- **Reactive Settings Changes**: Toggles (`/hud footer:off`, `/hud header:off`, etc.) are cached in-memory and applied instantly across the active TUI (no filesystem reads on render hot paths).
-- **Model ➜ Thinking ➜ Folder Breadcrumbs**: Seamlessly draws the dimmed current model name, accent-colored thinking level, and bold highlighted active folder directly into the editor's top border frame (`inner`) or as an above-editor TUI widget (`top`).
-- **Complete Headless Safety**: Includes strict, early `isExtensionContext` type-guarding on all EventBus and lifecycle handlers. Automatically shuts down and restores Pi's native headers and footers when disabled or on session exit.
+- **Memoized gradient logo header**: Smooth Pink `#d787af` → Cyan `#00afaf` per-grapheme interpolation. Uses `Intl.Segmenter` to preserve complex Unicode emoji/grapheme boundaries and caches repeated `text/start/end` gradient renders.
+- **Segmented TUI footer**: Displays git branch, context usage, cumulative input/output tokens, cache hit rate (`CH:XX.X%`) and cumulative session costs (`$X.XXX`). Context usage colors: success `<50%`, accent `50–69.9%`, warning `70–90%`, bold error `>90%`.
+- **Render-hotpath caches**: Settings, cumulative usage, sanitized extension status output, and repeated live-usage updates avoid unnecessary work during frequent TUI renders.
+- **Reactive settings changes**: Toggles (`/hud footer:off`, `/hud header:off`, etc.) apply instantly in the active TUI without filesystem reads during render.
+- **Model ➜ Thinking ➜ Folder breadcrumbs**: Draws dimmed model name, accent thinking level, and bold highlighted folder either inside the editor top border (`inner`) or above the editor as a widget (`top`).
+- **Headless safety**: Lifecycle handlers use `isExtensionContext` guards. Shutdown/disabling restores native Pi header/footer/editor components.
+- **Terminal-control sanitization**: Extension status strings and breadcrumb/header plaintext fields strip unsafe control sequences before rendering.
 
 ## 🛠️ Usage
 
 Inside Pi, use the `/hud` slash command:
 
-- `/hud` — Toggles the HUD on or off.
-- `/hud info` — Displays all current active HUD settings.
-- `/hud breadcrumb:<hide|top|inner>` — Selects breadcrumb layout style.
-- `/hud footer:<on|off>` — Toggles the custom token status footer.
-- `/hud header:<on|off>` — Toggles the gradient logo header.
-- `/hud header-info:<on|off>` — Toggles diagnostic system details in the header.
+- `/hud` — Toggle HUD on/off.
+- `/hud info` — Show active HUD settings.
+- `/hud breadcrumb:<hide|top|inner>` — Set breadcrumb placement.
+- `/hud footer:<on|off>` — Toggle footer.
+- `/hud header:<on|off>` — Toggle header.
+- `/hud header-info:<on|off>` — Toggle diagnostic header line.
 
-## 🔧 Configuration
+## ⚙️ Configuration
 
-Settings are stored globally in `~/.pi/agent/hud/settings.json` and can be overridden on a per-project basis in `.pi/hud.json`:
+Global config:
+
+```text
+~/.pi/agent/hud/settings.json
+```
+
+Project-local override:
+
+```text
+.pi/hud.json
+```
+
+Example:
 
 ```json
 {
@@ -37,4 +51,11 @@ Settings are stored globally in `~/.pi/agent/hud/settings.json` and can be overr
 }
 ```
 
-If Pi is launched with the CLI flag `--hud=false` or has `--hud` omitted from package flags, the command toggle will safely prevent conflicts and inform you.
+If Pi launches with `--hud=false`, runtime settings force the HUD off without changing persisted config.
+
+## ✅ Verification
+
+```bash
+npx vitest run tests/pi-tui-hud
+npm run validate
+```
