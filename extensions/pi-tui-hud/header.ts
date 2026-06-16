@@ -1,8 +1,11 @@
-import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent';
-import { truncateToWidth, visibleWidth } from '@earendil-works/pi-tui';
-import { readEffectiveSettings, DEFAULT_SETTINGS } from './settings';
-import { sanitizePlainText } from './breadcrumb';
-import { isExtensionContext, parseHex } from './utils';
+import type {
+  ExtensionAPI,
+  ExtensionContext,
+} from "@earendil-works/pi-coding-agent";
+import { truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { readEffectiveSettings, DEFAULT_SETTINGS } from "./settings";
+import { sanitizePlainText } from "./breadcrumb";
+import { isExtensionContext, parseHex } from "./utils";
 
 const GRADIENT_TEXT_CACHE_LIMIT = 128;
 const gradientTextCache = new Map<string, string>();
@@ -18,7 +21,11 @@ function cacheGradientText(key: string, value: string): string {
   return value;
 }
 
-export function getGradientText(text: string, startHex: string, endHex: string): string {
+export function getGradientText(
+  text: string,
+  startHex: string,
+  endHex: string,
+): string {
   const cacheKey = JSON.stringify([text, startHex, endHex]);
   const cached = gradientTextCache.get(cacheKey);
   if (cached !== undefined) {
@@ -29,9 +36,9 @@ export function getGradientText(text: string, startHex: string, endHex: string):
   const end = parseHex(endHex);
   if (!start || !end) return cacheGradientText(cacheKey, text);
 
-  let result = '';
+  let result = "";
   // Use Intl.Segmenter for grapheme-cluster safe splitting (protects ZWJ, skin tones, etc.)
-  const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+  const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
   const segments = Array.from(segmenter.segment(text)).map((s) => s.segment);
   const steps = segments.length;
   for (let i = 0; i < steps; i++) {
@@ -44,16 +51,19 @@ export function getGradientText(text: string, startHex: string, endHex: string):
   return cacheGradientText(cacheKey, result);
 }
 
-export function generateGradientHeader(logoText: string, width: number): string {
+export function generateGradientHeader(
+  logoText: string,
+  width: number,
+): string {
   const decorLen = visibleWidth(`⚡ ${logoText} ⚡`);
   if (width < decorLen) {
-    return truncateToWidth(logoText, width, '...');
+    return truncateToWidth(logoText, width, "...");
   }
   const paddingSize = Math.max(0, Math.floor((width - decorLen) / 2));
-  const padding = ' '.repeat(paddingSize);
+  const padding = " ".repeat(paddingSize);
 
   // Gradient bar: Pink (#d787af) -> Cyan (#00afaf)
-  const baseLogo = getGradientText(logoText, '#d787af', '#00afaf');
+  const baseLogo = getGradientText(logoText, "#d787af", "#00afaf");
   return `${padding}⚡ ${baseLogo} ⚡`;
 }
 
@@ -64,7 +74,7 @@ export function registerHeader(pi: ExtensionAPI) {
   let cachedSettings = DEFAULT_SETTINGS;
 
   function runtimeSettings() {
-    return { hudEnabled: pi.getFlag('hud') !== false };
+    return { hudEnabled: pi.getFlag("hud") !== false };
   }
 
   function enable(ctx: ExtensionContext) {
@@ -80,10 +90,14 @@ export function registerHeader(pi: ExtensionAPI) {
           if (!cachedSettings.enabled || !cachedSettings.header) {
             return [];
           }
-          const infoLines: string[] = [generateGradientHeader('PI-TUI-HUD', width)];
-          if (cachedSettings['header-info']) {
-            const rawInfo = ` Model: ${sanitizePlainText(ctx.model?.id || 'unknown')} | CWD: ${sanitizePlainText(ctx.cwd)}`;
-            infoLines.push(truncateToWidth(theme.fg('dim', rawInfo), width, '...'));
+          const infoLines: string[] = [
+            generateGradientHeader("PI-TUI-HUD", width),
+          ];
+          if (cachedSettings["header-info"]) {
+            const rawInfo = ` Model: ${sanitizePlainText(ctx.model?.id || "unknown")} | CWD: ${sanitizePlainText(ctx.cwd)}`;
+            infoLines.push(
+              truncateToWidth(theme.fg("dim", rawInfo), width, "..."),
+            );
           }
           return infoLines;
         },
@@ -100,7 +114,7 @@ export function registerHeader(pi: ExtensionAPI) {
     }
   }
 
-  pi.on('session_start', (_event, ctx) => {
+  pi.on("session_start", (_event, ctx) => {
     if (!ctx || !ctx.hasUI || !ctx.ui) return;
 
     const s = readEffectiveSettings(ctx.cwd, runtimeSettings());
@@ -114,15 +128,21 @@ export function registerHeader(pi: ExtensionAPI) {
       unsubSettings();
     }
 
-    unsubSettings = pi.events.on('hud_settings_changed', (changeCtx) => {
+    unsubSettings = pi.events.on("hud_settings_changed", (changeCtx) => {
       if (!isExtensionContext(changeCtx)) return;
-      
-      const updatedSettings = readEffectiveSettings(changeCtx.cwd, runtimeSettings());
+
+      const updatedSettings = readEffectiveSettings(
+        changeCtx.cwd,
+        runtimeSettings(),
+      );
       cachedSettings = updatedSettings;
 
       if (updatedSettings.enabled && updatedSettings.header && !headerEnabled) {
         enable(changeCtx);
-      } else if ((!updatedSettings.enabled || !updatedSettings.header) && headerEnabled) {
+      } else if (
+        (!updatedSettings.enabled || !updatedSettings.header) &&
+        headerEnabled
+      ) {
         disable(changeCtx);
       } else if (headerEnabled && liveTui) {
         liveTui.requestRender();
@@ -130,7 +150,7 @@ export function registerHeader(pi: ExtensionAPI) {
     });
   });
 
-  pi.on('session_shutdown', (_event, ctx) => {
+  pi.on("session_shutdown", (_event, ctx) => {
     if (headerEnabled) {
       disable(ctx);
     }

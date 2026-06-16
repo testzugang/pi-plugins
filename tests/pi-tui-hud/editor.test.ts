@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { visibleWidth } from '@earendil-works/pi-tui';
-import { HudCustomEditor, registerEditor } from '../../extensions/pi-tui-hud/editor';
-import { readEffectiveSettings } from '../../extensions/pi-tui-hud/settings';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { visibleWidth } from "@earendil-works/pi-tui";
+import {
+  HudCustomEditor,
+  registerEditor,
+} from "../../extensions/pi-tui-hud/editor";
+import { readEffectiveSettings } from "../../extensions/pi-tui-hud/settings";
 
-vi.mock('node:fs');
-vi.mock('../../extensions/pi-tui-hud/settings', () => ({
+vi.mock("node:fs");
+vi.mock("../../extensions/pi-tui-hud/settings", () => ({
   readEffectiveSettings: vi.fn(),
 }));
 
@@ -24,12 +27,15 @@ function createTaggedRenderTheme(tag: string) {
   };
 }
 
-function createRenderEditorState(ctxOverrides: Record<string, unknown>, thinkingLevel: string) {
+function createRenderEditorState(
+  ctxOverrides: Record<string, unknown>,
+  thinkingLevel: string,
+) {
   return {
-    breadcrumbMode: 'inner',
+    breadcrumbMode: "inner",
     ctx: {
-      cwd: '/workspaces/project-alpha',
-      model: { name: 'Claude 3.5' },
+      cwd: "/workspaces/project-alpha",
+      model: { name: "Claude 3.5" },
       ...ctxOverrides,
     },
     theme: createRenderTheme(),
@@ -46,22 +52,27 @@ function createRenderEditor(state: ReturnType<typeof createRenderEditorState>) {
   );
 }
 
-describe('HudCustomEditor direct rendering', () => {
-  it('renders inner breadcrumb with model, thinking level, and folder from instance state', () => {
-    const editor = createRenderEditor(createRenderEditorState({}, 'high'));
+describe("HudCustomEditor direct rendering", () => {
+  it("renders inner breadcrumb with model, thinking level, and folder from instance state", () => {
+    const editor = createRenderEditor(createRenderEditorState({}, "high"));
 
     const [topLine] = editor.render(100);
 
-    expect(topLine).toContain('Claude 3.5');
-    expect(topLine).toContain('⚡ high');
-    expect(topLine).toContain('project-alpha');
+    expect(topLine).toContain("Claude 3.5");
+    expect(topLine).toContain("⚡ high");
+    expect(topLine).toContain("project-alpha");
   });
 
-  it('truncates inner breadcrumb safely when width is narrow', () => {
-    const editor = createRenderEditor(createRenderEditorState({
-      cwd: '/workspaces/project-with-a-very-long-name',
-      model: { name: 'Very Long Model Name' },
-    }, 'extreme'));
+  it("truncates inner breadcrumb safely when width is narrow", () => {
+    const editor = createRenderEditor(
+      createRenderEditorState(
+        {
+          cwd: "/workspaces/project-with-a-very-long-name",
+          model: { name: "Very Long Model Name" },
+        },
+        "extreme",
+      ),
+    );
 
     const lines = editor.render(24);
 
@@ -69,47 +80,57 @@ describe('HudCustomEditor direct rendering', () => {
     expect(visibleWidth(lines[0])).toBeLessThanOrEqual(24);
   });
 
-  it('keeps old editor instances isolated from newer editor state', () => {
-    const oldEditor = createRenderEditor(createRenderEditorState({
-      cwd: '/workspaces/old-folder',
-      model: { name: 'Old Model' },
-    }, 'low'));
-    const newEditor = createRenderEditor(createRenderEditorState({
-      cwd: '/workspaces/new-folder',
-      model: { name: 'New Model' },
-    }, 'high'));
+  it("keeps old editor instances isolated from newer editor state", () => {
+    const oldEditor = createRenderEditor(
+      createRenderEditorState(
+        {
+          cwd: "/workspaces/old-folder",
+          model: { name: "Old Model" },
+        },
+        "low",
+      ),
+    );
+    const newEditor = createRenderEditor(
+      createRenderEditorState(
+        {
+          cwd: "/workspaces/new-folder",
+          model: { name: "New Model" },
+        },
+        "high",
+      ),
+    );
 
     newEditor.render(100);
     const [oldTopLine] = oldEditor.render(100);
 
-    expect(oldTopLine).toContain('Old Model');
-    expect(oldTopLine).toContain('⚡ low');
-    expect(oldTopLine).toContain('old-folder');
-    expect(oldTopLine).not.toContain('New Model');
-    expect(oldTopLine).not.toContain('⚡ high');
-    expect(oldTopLine).not.toContain('new-folder');
+    expect(oldTopLine).toContain("Old Model");
+    expect(oldTopLine).toContain("⚡ low");
+    expect(oldTopLine).toContain("old-folder");
+    expect(oldTopLine).not.toContain("New Model");
+    expect(oldTopLine).not.toContain("⚡ high");
+    expect(oldTopLine).not.toContain("new-folder");
   });
 
-  it('keeps original breadcrumb output when the original context is mutated after construction', () => {
-    const state = createRenderEditorState({}, 'low');
+  it("keeps original breadcrumb output when the original context is mutated after construction", () => {
+    const state = createRenderEditorState({}, "low");
     const editor = createRenderEditor(state);
 
-    state.ctx.cwd = '/workspaces/mutated-folder';
-    state.ctx.model = { name: 'Mutated Model' };
-    state.thinkingLevel = 'high';
+    state.ctx.cwd = "/workspaces/mutated-folder";
+    state.ctx.model = { name: "Mutated Model" };
+    state.thinkingLevel = "high";
 
     const [topLine] = editor.render(100);
 
-    expect(topLine).toContain('Claude 3.5');
-    expect(topLine).toContain('⚡ low');
-    expect(topLine).toContain('project-alpha');
-    expect(topLine).not.toContain('Mutated Model');
-    expect(topLine).not.toContain('⚡ high');
-    expect(topLine).not.toContain('mutated-folder');
+    expect(topLine).toContain("Claude 3.5");
+    expect(topLine).toContain("⚡ low");
+    expect(topLine).toContain("project-alpha");
+    expect(topLine).not.toContain("Mutated Model");
+    expect(topLine).not.toContain("⚡ high");
+    expect(topLine).not.toContain("mutated-folder");
   });
 });
 
-describe('editor registration and lifecycle', () => {
+describe("editor registration and lifecycle", () => {
   let mockPi: any;
   let mockCtx: any;
   let eventHandlers: Record<string, Function>;
@@ -123,7 +144,7 @@ describe('editor registration and lifecycle', () => {
     unsubMock = vi.fn();
 
     mockPi = {
-      getThinkingLevel: vi.fn().mockReturnValue('med'),
+      getThinkingLevel: vi.fn().mockReturnValue("med"),
       getFlag: vi.fn().mockReturnValue(true),
       on: vi.fn().mockImplementation((event, handler) => {
         eventHandlers[event] = handler;
@@ -137,7 +158,7 @@ describe('editor registration and lifecycle', () => {
     };
 
     mockCtx = {
-      cwd: '/mock/cwd',
+      cwd: "/mock/cwd",
       hasUI: true,
       ui: {
         theme: {
@@ -149,7 +170,7 @@ describe('editor registration and lifecycle', () => {
         setHeader: vi.fn(),
         setFooter: vi.fn(),
       },
-      model: { id: 'claude-3-5', name: 'Claude 3.5' },
+      model: { id: "claude-3-5", name: "Claude 3.5" },
     };
   });
 
@@ -157,134 +178,166 @@ describe('editor registration and lifecycle', () => {
     vi.restoreAllMocks();
   });
 
-  it('should register session_start, model_select, and session_shutdown handlers', () => {
+  it("should register session_start, model_select, and session_shutdown handlers", () => {
     registerEditor(mockPi);
-    expect(mockPi.on).toHaveBeenCalledWith('session_start', expect.any(Function));
-    expect(mockPi.on).toHaveBeenCalledWith('model_select', expect.any(Function));
-    expect(mockPi.on).toHaveBeenCalledWith('thinking_level_select', expect.any(Function));
-    expect(mockPi.on).toHaveBeenCalledWith('session_shutdown', expect.any(Function));
+    expect(mockPi.on).toHaveBeenCalledWith(
+      "session_start",
+      expect.any(Function),
+    );
+    expect(mockPi.on).toHaveBeenCalledWith(
+      "model_select",
+      expect.any(Function),
+    );
+    expect(mockPi.on).toHaveBeenCalledWith(
+      "thinking_level_select",
+      expect.any(Function),
+    );
+    expect(mockPi.on).toHaveBeenCalledWith(
+      "session_shutdown",
+      expect.any(Function),
+    );
 
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
-    eventHandlers['session_start']({}, mockCtx);
-    expect(mockPi.events.on).toHaveBeenCalledWith('hud_settings_changed', expect.any(Function));
+    eventHandlers["session_start"]({}, mockCtx);
+    expect(mockPi.events.on).toHaveBeenCalledWith(
+      "hud_settings_changed",
+      expect.any(Function),
+    );
   });
 
-  it('should not register CustomEditor when HUD is forced off by runtime flag', () => {
+  it("should not register CustomEditor when HUD is forced off by runtime flag", () => {
     mockPi.getFlag.mockReturnValue(false);
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: false,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
-    expect(readEffectiveSettings).toHaveBeenCalledWith('/mock/cwd', { hudEnabled: false });
+    expect(readEffectiveSettings).toHaveBeenCalledWith("/mock/cwd", {
+      hudEnabled: false,
+    });
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
   });
 
-  it('should register CustomEditor when enabled and breadcrumb is inner', () => {
+  it("should register CustomEditor when enabled and breadcrumb is inner", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
-    expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(expect.any(Function));
-    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith('hud-breadcrumb-widget', undefined);
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(
+      expect.any(Function),
+    );
+    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith(
+      "hud-breadcrumb-widget",
+      undefined,
+    );
   });
 
-  it('should register top widget instead of CustomEditor when enabled and breadcrumb is top', () => {
+  it("should register top widget instead of CustomEditor when enabled and breadcrumb is top", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'top',
+      breadcrumb: "top",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
-    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith('hud-breadcrumb-widget', expect.any(Function), { placement: 'aboveEditor' });
+    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith(
+      "hud-breadcrumb-widget",
+      expect.any(Function),
+      { placement: "aboveEditor" },
+    );
   });
 
-  it('should do nothing on hud_settings_changed if payload is invalid', () => {
+  it("should do nothing on hud_settings_changed if payload is invalid", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
     // Call setting changed with invalid context (no .ui)
-    const badCtx = { cwd: '/mock/cwd' };
-    busHandlers['hud_settings_changed'](badCtx);
+    const badCtx = { cwd: "/mock/cwd" };
+    busHandlers["hud_settings_changed"](badCtx);
 
     // The handler should safely return early and not mutate or crash
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledTimes(1); // Only from session_start
   });
 
-  it('should remove editor component and top widget when breadcrumb is hide', () => {
+  it("should remove editor component and top widget when breadcrumb is hide", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'hide',
+      breadcrumb: "hide",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
-    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith('hud-breadcrumb-widget', undefined);
+    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith(
+      "hud-breadcrumb-widget",
+      undefined,
+    );
   });
 
-  it('should clean up completely and call unsubscribe on shutdown', () => {
+  it("should clean up completely and call unsubscribe on shutdown", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx); // Enables and registers unsubSettings
-    eventHandlers['session_shutdown']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx); // Enables and registers unsubSettings
+    eventHandlers["session_shutdown"]({}, mockCtx);
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenLastCalledWith(undefined);
-    expect(mockCtx.ui.setWidget).toHaveBeenLastCalledWith('hud-breadcrumb-widget', undefined);
+    expect(mockCtx.ui.setWidget).toHaveBeenLastCalledWith(
+      "hud-breadcrumb-widget",
+      undefined,
+    );
     expect(unsubMock).toHaveBeenCalled();
   });
 
-  it('keeps a previously registered editor instance isolated after model_select creates newer state', () => {
+  it("keeps a previously registered editor instance isolated after model_select creates newer state", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     const editors: HudCustomEditor[] = [];
@@ -297,33 +350,33 @@ describe('editor registration and lifecycle', () => {
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
     const newerCtx = {
       ...mockCtx,
-      cwd: '/mock/new-folder',
-      model: { name: 'New Model' },
+      cwd: "/mock/new-folder",
+      model: { name: "New Model" },
     };
-    eventHandlers['model_select']({}, newerCtx);
+    eventHandlers["model_select"]({}, newerCtx);
 
     expect(editors).toHaveLength(2);
     const [oldTopLine] = editors[0].render(100);
     const [newTopLine] = editors[1].render(100);
-    expect(oldTopLine).toContain('Claude 3.5');
-    expect(oldTopLine).toContain('cwd');
-    expect(oldTopLine).not.toContain('New Model');
-    expect(oldTopLine).not.toContain('new-folder');
-    expect(newTopLine).toContain('New Model');
-    expect(newTopLine).toContain('new-folder');
+    expect(oldTopLine).toContain("Claude 3.5");
+    expect(oldTopLine).toContain("cwd");
+    expect(oldTopLine).not.toContain("New Model");
+    expect(oldTopLine).not.toContain("new-folder");
+    expect(newTopLine).toContain("New Model");
+    expect(newTopLine).toContain("new-folder");
   });
 
-  it('keeps a delayed old editor factory isolated after model_select creates newer state', () => {
+  it("keeps a delayed old editor factory isolated after model_select creates newer state", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     const factories: Function[] = [];
@@ -336,14 +389,14 @@ describe('editor registration and lifecycle', () => {
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
     const newerCtx = {
       ...mockCtx,
-      cwd: '/mock/new-folder',
-      model: { name: 'New Model' },
+      cwd: "/mock/new-folder",
+      model: { name: "New Model" },
     };
-    eventHandlers['model_select']({}, newerCtx);
+    eventHandlers["model_select"]({}, newerCtx);
 
     expect(factories).toHaveLength(2);
     const delayedOldEditor = factories[0](mockTui, mockCtx.ui.theme, {});
@@ -351,52 +404,54 @@ describe('editor registration and lifecycle', () => {
 
     const [oldTopLine] = delayedOldEditor.render(100);
     const [newTopLine] = delayedNewEditor.render(100);
-    expect(oldTopLine).toContain('Claude 3.5');
-    expect(oldTopLine).toContain('cwd');
-    expect(oldTopLine).not.toContain('New Model');
-    expect(oldTopLine).not.toContain('new-folder');
-    expect(newTopLine).toContain('New Model');
-    expect(newTopLine).toContain('new-folder');
+    expect(oldTopLine).toContain("Claude 3.5");
+    expect(oldTopLine).toContain("cwd");
+    expect(oldTopLine).not.toContain("New Model");
+    expect(oldTopLine).not.toContain("new-folder");
+    expect(newTopLine).toContain("New Model");
+    expect(newTopLine).toContain("new-folder");
   });
 
-  it('keeps two editor instances from the same factory isolated with different themes', () => {
+  it("keeps two editor instances from the same factory isolated with different themes", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     let factory: Function | undefined;
     const mockTui = { terminal: { rows: 24 }, requestRender: vi.fn() };
-    mockCtx.ui.setEditorComponent.mockImplementation((registeredFactory: any) => {
-      factory = registeredFactory;
-    });
+    mockCtx.ui.setEditorComponent.mockImplementation(
+      (registeredFactory: any) => {
+        factory = registeredFactory;
+      },
+    );
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
     expect(factory).toEqual(expect.any(Function));
-    const firstEditor = factory!(mockTui, createTaggedRenderTheme('first'), {});
-    factory!(mockTui, createTaggedRenderTheme('second'), {});
+    const firstEditor = factory!(mockTui, createTaggedRenderTheme("first"), {});
+    factory!(mockTui, createTaggedRenderTheme("second"), {});
 
     const [firstTopLine] = firstEditor.render(100);
 
-    expect(firstTopLine).toContain('[first:dim]');
-    expect(firstTopLine).toContain('Claude 3.5');
-    expect(firstTopLine).toContain('[first:accent]');
-    expect(firstTopLine).not.toContain('[second:dim]');
-    expect(firstTopLine).not.toContain('[second:accent]');
+    expect(firstTopLine).toContain("[first:dim]");
+    expect(firstTopLine).toContain("Claude 3.5");
+    expect(firstTopLine).toContain("[first:accent]");
+    expect(firstTopLine).not.toContain("[second:dim]");
+    expect(firstTopLine).not.toContain("[second:accent]");
   });
 
-  it('should update state and request render on model_select', () => {
+  it("should update state and request render on model_select", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     const mockTui = { requestRender: vi.fn() };
@@ -407,21 +462,21 @@ describe('editor registration and lifecycle', () => {
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
     // Trigger model select
-    eventHandlers['model_select']({}, mockCtx);
+    eventHandlers["model_select"]({}, mockCtx);
 
     expect(mockTui.requestRender).toHaveBeenCalled();
   });
 
-  it('should update state and request render on thinking_level_select', () => {
+  it("should update state and request render on thinking_level_select", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     const mockTui = { requestRender: vi.fn() };
@@ -432,174 +487,182 @@ describe('editor registration and lifecycle', () => {
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
 
-    eventHandlers['thinking_level_select']({ level: 'high' }, mockCtx);
+    eventHandlers["thinking_level_select"]({ level: "high" }, mockCtx);
 
     expect(mockTui.requestRender).toHaveBeenCalled();
   });
 
-  it('clears editor and widget on model_select when HUD becomes forced off', () => {
+  it("clears editor and widget on model_select when HUD becomes forced off", () => {
     vi.mocked(readEffectiveSettings)
       .mockReturnValueOnce({
         enabled: true,
-        breadcrumb: 'inner',
+        breadcrumb: "inner",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       })
       .mockReturnValueOnce({
         enabled: true,
-        breadcrumb: 'inner',
+        breadcrumb: "inner",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       })
       .mockReturnValue({
         enabled: false,
-        breadcrumb: 'inner',
+        breadcrumb: "inner",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
     mockCtx.ui.setEditorComponent.mockClear();
     mockCtx.ui.setWidget.mockClear();
 
-    eventHandlers['model_select']({}, mockCtx);
+    eventHandlers["model_select"]({}, mockCtx);
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledTimes(1);
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
-    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith('hud-breadcrumb-widget', undefined);
+    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith(
+      "hud-breadcrumb-widget",
+      undefined,
+    );
   });
 
-  it('clears inner editor on model_select when current breadcrumb setting is top', () => {
+  it("clears inner editor on model_select when current breadcrumb setting is top", () => {
     vi.mocked(readEffectiveSettings)
       .mockReturnValueOnce({
         enabled: true,
-        breadcrumb: 'inner',
+        breadcrumb: "inner",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       })
       .mockReturnValue({
         enabled: true,
-        breadcrumb: 'top',
+        breadcrumb: "top",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
     mockCtx.ui.setEditorComponent.mockClear();
 
-    eventHandlers['model_select']({}, mockCtx);
+    eventHandlers["model_select"]({}, mockCtx);
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
   });
 
-  it('clears editor and widget on thinking_level_select when HUD becomes forced off', () => {
+  it("clears editor and widget on thinking_level_select when HUD becomes forced off", () => {
     vi.mocked(readEffectiveSettings)
       .mockReturnValueOnce({
         enabled: true,
-        breadcrumb: 'inner',
+        breadcrumb: "inner",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       })
       .mockReturnValueOnce({
         enabled: true,
-        breadcrumb: 'inner',
+        breadcrumb: "inner",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       })
       .mockReturnValue({
         enabled: false,
-        breadcrumb: 'inner',
+        breadcrumb: "inner",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
     mockCtx.ui.setEditorComponent.mockClear();
     mockCtx.ui.setWidget.mockClear();
 
-    eventHandlers['thinking_level_select']({ level: 'high' }, mockCtx);
+    eventHandlers["thinking_level_select"]({ level: "high" }, mockCtx);
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledTimes(1);
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
-    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith('hud-breadcrumb-widget', undefined);
+    expect(mockCtx.ui.setWidget).toHaveBeenCalledWith(
+      "hud-breadcrumb-widget",
+      undefined,
+    );
   });
 
-  it('clears inner editor on thinking_level_select when current breadcrumb setting is hide', () => {
+  it("clears inner editor on thinking_level_select when current breadcrumb setting is hide", () => {
     vi.mocked(readEffectiveSettings)
       .mockReturnValueOnce({
         enabled: true,
-        breadcrumb: 'inner',
+        breadcrumb: "inner",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       })
       .mockReturnValue({
         enabled: true,
-        breadcrumb: 'hide',
+        breadcrumb: "hide",
         footer: true,
         header: true,
-        'header-info': false,
+        "header-info": false,
       });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx);
+    eventHandlers["session_start"]({}, mockCtx);
     mockCtx.ui.setEditorComponent.mockClear();
 
-    eventHandlers['thinking_level_select']({ level: 'high' }, mockCtx);
+    eventHandlers["thinking_level_select"]({ level: "high" }, mockCtx);
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
   });
 
-  it('should dynamically enable or disable on settings changed event', () => {
+  it("should dynamically enable or disable on settings changed event", () => {
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: false,
-      breadcrumb: 'hide',
+      breadcrumb: "hide",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
     registerEditor(mockPi);
-    eventHandlers['session_start']({}, mockCtx); // Starts disabled
+    eventHandlers["session_start"]({}, mockCtx); // Starts disabled
 
     expect(mockCtx.ui.setEditorComponent).toHaveBeenCalledWith(undefined);
 
     // Simulate settings changing to inner breadcrumb
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: true,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
-    busHandlers['hud_settings_changed'](mockCtx);
+    busHandlers["hud_settings_changed"](mockCtx);
 
-    expect(mockCtx.ui.setEditorComponent).toHaveBeenLastCalledWith(expect.any(Function));
+    expect(mockCtx.ui.setEditorComponent).toHaveBeenLastCalledWith(
+      expect.any(Function),
+    );
 
     // Simulate settings changing back to disabled
     vi.mocked(readEffectiveSettings).mockReturnValue({
       enabled: false,
-      breadcrumb: 'inner',
+      breadcrumb: "inner",
       footer: true,
       header: true,
-      'header-info': false,
+      "header-info": false,
     });
 
-    busHandlers['hud_settings_changed'](mockCtx);
+    busHandlers["hud_settings_changed"](mockCtx);
     expect(mockCtx.ui.setEditorComponent).toHaveBeenLastCalledWith(undefined);
   });
 });
