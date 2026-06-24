@@ -1,0 +1,13 @@
+{
+  "name": "pi-approval-recorder",
+  "version": "0.1.0",
+  "description": "Records manually approved bash commands to find patterns for bash-approval rules",
+  "type": "module",
+  "main": "extension.ts",
+  "keywords": [
+    "pi-package"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  }
+}

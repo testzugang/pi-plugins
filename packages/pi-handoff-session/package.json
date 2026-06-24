@@ -1,0 +1,24 @@
+{
+  "name": "pi-handoff-session",
+  "version": "0.1.0",
+  "description": "Create focused handoffs for new sessions with automated context condensation and preview UI",
+  "type": "module",
+  "main": "extensions/handoff-session/index.ts",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "handoff",
+    "session"
+  ],
+  "license": "MIT",
+  "pi": {
+    "extensions": [
+      "./extensions/handoff-session"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-tui": "*"
+  }
+}

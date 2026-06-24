@@ -26,7 +26,8 @@
     ],
     "extensions": [
       "./extensions",
-      "./packages/pi-pr-findings/extensions"
+      "./packages/pi-pr-findings/extensions",
+      "./packages/pi-handoff-session/extensions/handoff-session"
     ],
     "prompts": [
       "./prompts"
