@@ -10,12 +10,18 @@ import {
   convertToLlm,
   serializeConversation,
 } from "@earendil-works/pi-coding-agent";
-import { complete, type Message } from "@earendil-works/pi-ai";
+import { complete, type Message, type Model } from "@earendil-works/pi-ai";
 import { HandoffOverlayComponent, type HandoffOptions } from "./ui.ts";
 import { parseReferences, autoDetectReferences } from "./references.ts";
-import { buildGeneratorPrompt } from "./handoff.ts";
+import {
+  buildGeneratorPrompt,
+  buildSuggestionPrompt,
+  contentBlocksToText,
+  parseSuggestionResponse,
+} from "./handoff.ts";
 import {
   buildTargetModelChoices,
+  createTargetModelSwitcher,
   executeSessionTransition,
   filterModelsByEnabledPatterns,
   findModelByReference,
@@ -146,6 +152,47 @@ export function prepareHandoffContext(branch: SessionEntry[]): HandoffContext {
   };
 }
 
+async function suggestInitialHandoffOptions(
+  args: string,
+  ctx: ExtensionCommandContext,
+  model: Model<any>,
+  auth: { apiKey: string; headers?: Record<string, string> },
+): Promise<{ goal: string; sessionName: string }> {
+  const fallbackGoal = args || "Start the next step from this handoff";
+
+  try {
+    const handoffCtx = prepareHandoffContext(ctx.sessionManager.getBranch());
+    const llmMessages = convertToLlm(handoffCtx.messages);
+    const conversationText = serializeConversation(llmMessages).slice(-12000);
+    const suggestionPrompt = buildSuggestionPrompt(conversationText, fallbackGoal);
+    const userMessage: Message = {
+      role: "user",
+      content: [{ type: "text", text: suggestionPrompt }],
+      timestamp: Date.now(),
+    };
+    const response = await complete(
+      model,
+      {
+        systemPrompt:
+          "You generate compact JSON defaults for Pi handoff sessions.",
+        messages: [userMessage],
+      },
+      {
+        apiKey: auth.apiKey,
+        headers: auth.headers,
+        maxTokens: 300,
+        temperature: 0,
+      },
+    );
+    return parseSuggestionResponse(
+      contentBlocksToText(response.content),
+      fallbackGoal,
+    );
+  } catch {
+    return parseSuggestionResponse("", fallbackGoal);
+  }
+}
+
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("handoff-session", {
     description: "Start a focused handoff session transition",
@@ -188,6 +235,10 @@ export default function (pi: ExtensionAPI) {
           scopedModelObjects,
           availableModelObjects,
         );
+        const initialOptions = parseSuggestionResponse(
+          "",
+          args || "Start the next step from this handoff",
+        );
 
         // 1. Show Custom TUI Dialog in Overlay mode
         const customUIResult = await ctx.ui.custom<
@@ -197,10 +248,21 @@ export default function (pi: ExtensionAPI) {
             const component = new HandoffOverlayComponent(
               ctx,
               tui,
-              args,
+              initialOptions.goal,
               availableModels,
               done,
+              initialOptions.sessionName,
             );
+
+            void suggestInitialHandoffOptions(args, ctx, activeModel, {
+              apiKey: auth.apiKey,
+              headers: auth.headers,
+            }).then((suggested) => {
+              component.applySuggestedDefaults(
+                suggested.goal,
+                suggested.sessionName,
+              );
+            });
 
             // Register the inline onGenerate callback to fetch from LLM with AbortSignal
             component.onGenerate = async (opts, signal) => {
@@ -246,13 +308,7 @@ export default function (pi: ExtensionAPI) {
                   return null;
                 }
 
-                return response.content
-                  .filter(
-                    (c): c is { type: "text"; text: string } =>
-                      c.type === "text",
-                  )
-                  .map((c) => c.text)
-                  .join("\n");
+                return contentBlocksToText(response.content);
               } catch (err: unknown) {
                 const errorMsg =
                   err instanceof Error ? err.message : String(err);
@@ -309,16 +365,9 @@ export default function (pi: ExtensionAPI) {
           sessionName: options.sessionName,
           targetModel: options.targetModel,
           targetModelObject,
-          switchTargetModel: async (model) => {
-            if (
-              model.provider === activeModel.provider &&
-              model.id === activeModel.id
-            )
-              return;
-            const ok = await pi.setModel(model);
-            if (!ok)
-              throw new Error(`No API key for ${model.provider}/${model.id}`);
-          },
+          switchTargetModel: createTargetModelSwitcher((model) =>
+            pi.setModel(model),
+          ),
         });
       } catch (err: unknown) {
         const errorMsg = err instanceof Error ? err.message : String(err);

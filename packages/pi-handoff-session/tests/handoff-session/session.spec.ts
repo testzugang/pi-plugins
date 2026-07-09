@@ -3,6 +3,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import {
   buildTargetModelChoices,
+  createTargetModelSwitcher,
   executeSessionTransition,
   filterModelsByEnabledPatterns,
   findModelByReference,
@@ -208,5 +209,42 @@ describe("Session & File Persistence", () => {
 
     expect(switchTargetModel).toHaveBeenCalledWith(targetModel);
     expect(callOrder).toEqual(["switch", "newSession"]);
+  });
+
+  it("always applies the selected target model before handoff session creation", async () => {
+    const targetModel = { provider: "anthropic", id: "claude-sonnet-4-5" } as any;
+    const setModel = vi.fn().mockResolvedValue(true);
+    const switchTargetModel = createTargetModelSwitcher(setModel);
+
+    await switchTargetModel(targetModel);
+
+    expect(setModel).toHaveBeenCalledWith(targetModel);
+  });
+
+  it("reports missing authentication when applying the target model fails", async () => {
+    const targetModel = { provider: "openai", id: "gpt-5.2" } as any;
+    const setModel = vi.fn().mockResolvedValue(false);
+    const switchTargetModel = createTargetModelSwitcher(setModel);
+
+    await expect(switchTargetModel(targetModel)).rejects.toThrow(
+      "No API key for openai/gpt-5.2",
+    );
+  });
+
+  it("rejects invalid target model references before creating a replacement session", async () => {
+    const mockNewSession = vi.fn();
+    const mockCtx = {
+      sessionManager: { getSessionFile: () => "parent-session.jsonl" },
+      newSession: mockNewSession,
+      ui: { notify: vi.fn() },
+    };
+
+    await expect(
+      executeSessionTransition(mockCtx as any, "## Goal\nTest Prompt", {
+        sessionName: "test-session",
+        targetModel: "claude-without-provider",
+      }),
+    ).rejects.toThrow("Invalid target model reference: claude-without-provider");
+    expect(mockNewSession).not.toHaveBeenCalled();
   });
 });

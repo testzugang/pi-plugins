@@ -1,3 +1,83 @@
+import { createConciseSessionName } from "./naming.ts";
+
+export interface HandoffSuggestion {
+  goal: string;
+  sessionName: string;
+}
+
+export function contentBlocksToText(
+  content: Array<{ type: string; text?: string; [key: string]: unknown }>,
+): string {
+  return content
+    .filter((block): block is { type: "text"; text: string } =>
+      block.type === "text" && typeof block.text === "string",
+    )
+    .map((block) => block.text)
+    .join("\n");
+}
+
+export function buildSuggestionPrompt(
+  conversationSummary: string,
+  fallbackGoal: string,
+): string {
+  return `Analyze the recent Pi coding session context and propose better defaults for a handoff to a new session.
+
+Fallback goal from the command/UI:
+${fallbackGoal}
+
+Recent session context:
+${conversationSummary}
+
+Return only JSON with this exact shape:
+{"goal":"one concrete next-session goal","sessionName":"short kebab-case topic name"}
+
+Rules:
+- The goal must match the actual recent context and next likely task.
+- If the fallback goal is explicit, preserve that intent and only make it more concrete.
+- The sessionName must be concise, lowercase, and omit filler words like handoff, session, next, step, continue.
+- Do not include markdown, comments, or explanatory text.`;
+}
+
+function extractJsonObject(text: string): string | undefined {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) return undefined;
+  return text.slice(start, end + 1);
+}
+
+export function parseSuggestionResponse(
+  responseText: string,
+  fallbackGoal: string,
+): HandoffSuggestion {
+  let goal = fallbackGoal;
+  let rawSessionName = fallbackGoal;
+
+  const jsonText = extractJsonObject(responseText);
+  if (jsonText) {
+    try {
+      const parsed = JSON.parse(jsonText) as Record<string, unknown>;
+      if (typeof parsed.goal === "string" && parsed.goal.trim()) {
+        goal = parsed.goal.trim();
+      }
+      if (
+        typeof parsed.sessionName === "string" &&
+        parsed.sessionName.trim()
+      ) {
+        rawSessionName = parsed.sessionName.trim();
+      } else {
+        rawSessionName = goal;
+      }
+    } catch {
+      rawSessionName = goal;
+    }
+  }
+
+  return {
+    goal,
+    sessionName: createConciseSessionName(rawSessionName),
+  };
+}
+
 export function buildGeneratorPrompt(
   goal: string,
   manualReferences: string[],

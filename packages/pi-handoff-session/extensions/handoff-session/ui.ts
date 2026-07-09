@@ -8,7 +8,7 @@ import {
   matchesKey,
   visibleWidth,
 } from "@earendil-works/pi-tui";
-import { slugify } from "./naming.ts";
+import { createConciseSessionName } from "./naming.ts";
 
 export interface HandoffOptions {
   goal: string;
@@ -43,8 +43,10 @@ export class HandoffOverlayComponent implements Focusable {
 
   private selectedRow = 0;
   private goal: string;
+  private goalEdited = false;
   private targetModelIndex = 0;
   private sessionName: string;
+  private sessionNameEdited = false;
   private manualReferences = "";
   private saveHandoff = false;
 
@@ -82,16 +84,31 @@ export class HandoffOverlayComponent implements Focusable {
     done: (
       result: { options: HandoffOptions; prompt?: string } | undefined,
     ) => void,
+    initialSessionName?: string,
   ) {
     this.ctx = ctx;
     this.theme = ctx.ui.theme;
     this.tui = tui;
     this.goal = initialGoal || "Start the next step from this handoff";
     this.goalCursor = this.goal.length;
-    this.sessionName = `handoff-${slugify(this.goal).slice(0, 30)}`;
+    this.sessionName = initialSessionName || createConciseSessionName(this.goal);
     this.sessionNameCursor = this.sessionName.length;
     this.availableModels = availableModels;
     this.done = done;
+  }
+
+  public applySuggestedDefaults(goal: string, sessionName: string): void {
+    if (this.phase !== "options") return;
+
+    if (!this.goalEdited) {
+      this.goal = goal;
+      this.goalCursor = this.goal.length;
+    }
+    if (!this.sessionNameEdited) {
+      this.sessionName = sessionName || createConciseSessionName(this.goal);
+      this.sessionNameCursor = this.sessionName.length;
+    }
+    this.invalidate();
   }
 
   public setGeneratedPrompt(prompt: string) {
@@ -194,9 +211,12 @@ export class HandoffOverlayComponent implements Focusable {
     }
 
     if (this.selectedRow === OptionsRow.Goal) {
+      this.goalEdited = true;
       this.handleTextInput("goal", data);
-      this.sessionName = `handoff-${slugify(this.goal).slice(0, 30)}`;
-      this.sessionNameCursor = this.sessionName.length;
+      if (!this.sessionNameEdited) {
+        this.sessionName = createConciseSessionName(this.goal);
+        this.sessionNameCursor = this.sessionName.length;
+      }
     } else if (this.selectedRow === OptionsRow.TargetModel) {
       // Target Model select
       if (
@@ -209,6 +229,7 @@ export class HandoffOverlayComponent implements Focusable {
           this.availableModels.length;
       }
     } else if (this.selectedRow === OptionsRow.SessionName) {
+      this.sessionNameEdited = true;
       this.handleTextInput("sessionName", data);
     } else if (this.selectedRow === OptionsRow.References) {
       this.handleTextInput("references", data);

@@ -139,6 +139,15 @@ export function buildTargetModelChoices(
   return choices;
 }
 
+export type SetTargetModel = (model: Model<any>) => Promise<boolean>;
+
+export function createTargetModelSwitcher(setModel: SetTargetModel) {
+  return async (model: Model<any>): Promise<void> => {
+    const ok = await setModel(model);
+    if (!ok) throw new Error(`No API key for ${model.provider}/${model.id}`);
+  };
+}
+
 export async function saveHandoffFile(
   cwd: string,
   sessionName: string,
@@ -222,6 +231,12 @@ export async function executeSessionTransition(
   },
 ): Promise<void> {
   const parentSessionFile = ctx.sessionManager.getSessionFile();
+  const targetModelReference = options.targetModel
+    ? parseModelReference(options.targetModel)
+    : undefined;
+  if (options.targetModel && !targetModelReference) {
+    throw new Error(`Invalid target model reference: ${options.targetModel}`);
+  }
 
   if (options.targetModelObject && options.switchTargetModel) {
     await options.switchTargetModel(options.targetModelObject);
@@ -234,12 +249,11 @@ export async function executeSessionTransition(
       sm.appendSessionInfo(options.sessionName);
 
       // Apply target model change entry if specified
-      if (options.targetModel) {
-        const parts = options.targetModel.split("/");
-        const provider = parts.length > 1 ? parts[0] : "anthropic";
-        const modelId =
-          parts.length > 1 ? parts.slice(1).join("/") : options.targetModel;
-        sm.appendModelChange(provider, modelId);
+      if (targetModelReference) {
+        sm.appendModelChange(
+          targetModelReference.provider,
+          targetModelReference.modelId,
+        );
       }
     },
     withSession: async (newCtx) => {
