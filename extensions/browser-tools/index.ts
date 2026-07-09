@@ -12,10 +12,12 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, parse } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Type } from "typebox";
 
+const EXTENSION_DIR = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_BROWSER_TOOLS_DIR = join(
-  __dirname,
+  EXTENSION_DIR,
   "..",
   "..",
   "scripts",
@@ -32,6 +34,7 @@ type ExecResult = {
 };
 
 type ProfileSelection = boolean | string;
+type ConfigScope = "user" | "project";
 
 type BrowserToolsConfig = {
   profile?: ProfileSelection;
@@ -69,9 +72,23 @@ export default function (pi: ExtensionAPI) {
   };
 
   const profileHandler = async (args: string, ctx: any) => {
-    if (args.trim() === "clear") {
-      clearProjectDefaultProfile();
-      notify(ctx, "Project browser profile default cleared", "info");
+    const parsedArgs = parseConfigCommandArgs(args);
+    if (!parsedArgs) {
+      notify(
+        ctx,
+        "Usage: /browser-profile [--global|--project] [clear]",
+        "error",
+      );
+      return;
+    }
+
+    if (parsedArgs.clear) {
+      clearDefaultProfile(parsedArgs.scope);
+      notify(
+        ctx,
+        `${scopeLabel(parsedArgs.scope)} browser profile default cleared`,
+        "info",
+      );
       return;
     }
 
@@ -97,18 +114,32 @@ export default function (pi: ExtensionAPI) {
     const selected = profiles.find((profile) => profile.label === choice);
     if (!selected) return;
 
-    writeProjectDefaultProfile(selected.directory);
+    writeDefaultProfile(parsedArgs.scope, selected.directory);
     notify(
       ctx,
-      `Project browser profile default set to ${selected.directory}`,
+      `${scopeLabel(parsedArgs.scope)} browser profile default set to ${selected.directory}`,
       "info",
     );
   };
 
   const executableHandler = async (args: string, ctx: any) => {
-    if (args.trim() === "clear") {
-      clearProjectDefaultExecutable();
-      notify(ctx, "Project browser executable default cleared", "info");
+    const parsedArgs = parseConfigCommandArgs(args);
+    if (!parsedArgs) {
+      notify(
+        ctx,
+        "Usage: /browser-executable [--global|--project] [clear]",
+        "error",
+      );
+      return;
+    }
+
+    if (parsedArgs.clear) {
+      clearDefaultExecutable(parsedArgs.scope);
+      notify(
+        ctx,
+        `${scopeLabel(parsedArgs.scope)} browser executable default cleared`,
+        "info",
+      );
       return;
     }
 
@@ -143,10 +174,10 @@ export default function (pi: ExtensionAPI) {
     );
     if (!selected) return;
 
-    writeProjectDefaultExecutable(selected.path);
+    writeDefaultExecutable(parsedArgs.scope, selected.path);
     notify(
       ctx,
-      `Project browser executable default set to ${selected.name}`,
+      `${scopeLabel(parsedArgs.scope)} browser executable default set to ${selected.name}`,
       "info",
     );
   };
@@ -217,13 +248,13 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("browser-profile", {
     description:
-      "Select a Chrome profile and save it as the project browser default. Use 'clear' to remove the project default.",
+      "Select a Chrome profile and save it as the global browser default. Use --project for a project override or 'clear' to remove the selected-scope default.",
     handler: profileHandler,
   });
 
   pi.registerCommand("browser-executable", {
     description:
-      "Select a Chrome/Chromium executable and save it as the project browser default. Use 'clear' to remove the project default.",
+      "Select a Chrome/Chromium executable and save it as the global browser default. Use --project for a project override or 'clear' to remove the selected-scope default.",
     handler: executableHandler,
   });
 
@@ -618,8 +649,11 @@ function discoverExecutables(): BrowserExecutable[] {
   return list;
 }
 
-function writeProjectConfig(update: Partial<BrowserToolsConfig>): void {
-  const configPath = projectConfigPath(process.cwd());
+function writeConfig(
+  scope: ConfigScope,
+  update: Partial<BrowserToolsConfig>,
+): void {
+  const configPath = scopedConfigPath(scope);
   mkdirSync(dirname(configPath), { recursive: true });
 
   const existing = readConfig(configPath) || {};
@@ -642,20 +676,55 @@ function writeProjectConfig(update: Partial<BrowserToolsConfig>): void {
   rmSync(`${configPath}.tmp`, { force: true });
 }
 
-function writeProjectDefaultProfile(profile: string): void {
-  writeProjectConfig({ profile });
+function writeDefaultProfile(scope: ConfigScope, profile: string): void {
+  writeConfig(scope, { profile });
 }
 
-function clearProjectDefaultProfile(): void {
-  writeProjectConfig({ profile: undefined });
+function clearDefaultProfile(scope: ConfigScope): void {
+  writeConfig(scope, { profile: undefined });
 }
 
-function writeProjectDefaultExecutable(executablePath: string): void {
-  writeProjectConfig({ executablePath });
+function writeDefaultExecutable(
+  scope: ConfigScope,
+  executablePath: string,
+): void {
+  writeConfig(scope, { executablePath });
 }
 
-function clearProjectDefaultExecutable(): void {
-  writeProjectConfig({ executablePath: undefined });
+function clearDefaultExecutable(scope: ConfigScope): void {
+  writeConfig(scope, { executablePath: undefined });
+}
+
+function scopedConfigPath(scope: ConfigScope): string {
+  return scope === "project"
+    ? projectConfigPath(process.cwd())
+    : userConfigPath();
+}
+
+function parseConfigCommandArgs(
+  args: string,
+): { scope: ConfigScope; clear: boolean } | null {
+  const tokens = args.trim().split(/\s+/).filter(Boolean);
+  let scope: ConfigScope = "user";
+  let clear = false;
+
+  for (const token of tokens) {
+    if (token === "--project" || token === "project") {
+      scope = "project";
+    } else if (token === "--global" || token === "global") {
+      scope = "user";
+    } else if (token === "clear") {
+      clear = true;
+    } else {
+      return null;
+    }
+  }
+
+  return { scope, clear };
+}
+
+function scopeLabel(scope: ConfigScope): string {
+  return scope === "project" ? "Project" : "Global";
 }
 
 function loadDefaultExecutablePath(): string | undefined {
@@ -701,7 +770,11 @@ function projectConfigPath(projectDir: string): string {
 }
 
 function userConfigPath(): string {
-  return join(homedir(), ".pi", "agent", "browser-tools.json");
+  return join(userHomeDir(), ".pi", "agent", "browser-tools.json");
+}
+
+function userHomeDir(): string {
+  return process.env.HOME ?? homedir();
 }
 
 function readConfig(path: string): BrowserToolsConfig | undefined {

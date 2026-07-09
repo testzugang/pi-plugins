@@ -197,7 +197,9 @@ Install the package, then use the browser commands:
 /browser-start profile
 /browser-start profile "Profile 2"
 /browser-profile
+/browser-profile --project
 /browser-profile clear
+/browser-profile --project clear
 /browser-nav https://example.com
 /browser-nav https://example.com --new
 /browser-eval document.title
@@ -219,7 +221,7 @@ For guidance during browser tasks, run:
 /skill:browser-tools
 ```
 
-Chrome profile defaults can be stored in `.pi/browser-tools.json` for a project or `~/.pi/agent/browser-tools.json` for the user.
+Chrome profile and executable defaults are stored globally in `~/.pi/agent/browser-tools.json` by default. Project overrides can be stored with `--project` in `.pi/browser-tools.json` and take precedence over global defaults.
 
 ### [`session-branding`](extensions/session-branding)
 

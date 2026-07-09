@@ -11,8 +11,8 @@ Use the browser tools when a task needs a real Chrome session: frontend testing,
 
 - `/browser` - Master-Befehl zur Steuerung und Interaktion mit dem Browser. Wird er ohne Argumente aufgerufen, öffnet sich ein interaktives Konfigurationsmenü. Unterstützt folgende Subcommands:
   - `start [profile]` – Browser starten (optional mit bestimmtem Profil)
-  - `profile [name]` – Chrome-Profil als Standard festlegen (`clear` zum Löschen)
-  - `executable [path]` – Browser-Executable als Standard festlegen (`clear` zum Löschen)
+  - `profile [--global|--project] [clear]` – Chrome-Profil als Standard festlegen (global als Default; `--project` für Projekt-Override; `clear` zum Löschen im gewählten Scope)
+  - `executable [--global|--project] [clear]` – Browser-Executable als Standard festlegen (global als Default; `--project` für Projekt-Override; `clear` zum Löschen im gewählten Scope)
   - `nav <url>` – URL aufrufen
   - `eval <code>` – JavaScript ausführen
   - `screenshot` – Screenshot aufnehmen
@@ -53,9 +53,9 @@ Use a named Chrome profile when the user asks for a specific profile:
 browser_start({ profile: "Profile 2" })
 ```
 
-Use `/browser-profile` when the user wants to choose from available Chrome profiles and persist the project default.
+Use `/browser-profile` when the user wants to choose from available Chrome profiles and persist the global default. Use `/browser-profile --project` only when a project-specific override is needed.
 
-Project defaults can also be set manually in `.pi/browser-tools.json`:
+Global defaults can also be set manually in `~/.pi/agent/browser-tools.json`:
 
 ```json
 {
@@ -63,6 +63,8 @@ Project defaults can also be set manually in `.pi/browser-tools.json`:
   "executablePath": "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
 }
 ```
+
+Project overrides use the same JSON shape in `.pi/browser-tools.json` and take precedence over global defaults.
 
 Or configure via environment variable `PI_CHROME_PATH`:
 

@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it, vi as jest } from "vitest";
 import {
   existsSync,
   mkdirSync,
@@ -128,7 +128,7 @@ function setup(
 
   const recorded: Recorded = { commands: new Map(), tools: new Map(), exec };
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mod = require("../../extensions/browser-tools") as {
+  const mod = require("../../extensions/browser-tools/index.ts") as {
     default: (pi: unknown) => void;
   };
   mod.default(makeFakePi(recorded));
@@ -232,13 +232,21 @@ describe("browser-session extension", () => {
     );
   });
 
-  it("uses the project browser profile default when no profile argument is given", async () => {
+  it("uses the project browser profile default before the user default", async () => {
     const projectDir = mkdtempSync(join(tmpdir(), "pi-browser-tools-"));
+    const homeDir = mkdtempSync(join(tmpdir(), "pi-browser-home-"));
     const cwdSpy = jest.spyOn(process, "cwd").mockReturnValue(projectDir);
+    const originalHome = process.env.HOME;
+    process.env.HOME = homeDir;
     mkdirSync(join(projectDir, ".pi"));
+    mkdirSync(join(homeDir, ".pi", "agent"), { recursive: true });
     writeFileSync(
       join(projectDir, ".pi", "browser-tools.json"),
-      JSON.stringify({ profile: "Work" }),
+      JSON.stringify({ profile: "Project" }),
+    );
+    writeFileSync(
+      join(homeDir, ".pi", "agent", "browser-tools.json"),
+      JSON.stringify({ profile: "Global" }),
     );
     try {
       const rec = setup();
@@ -248,20 +256,56 @@ describe("browser-session extension", () => {
 
       expect(rec.exec).toHaveBeenCalledWith(
         join(BROWSER_TOOLS_DIR, "browser-start.js"),
-        ["--profile", "Work"],
+        ["--profile", "Project"],
         expect.objectContaining({ timeout: 10000 }),
       );
       expect(notify).toHaveBeenCalledWith(
-        "Browser session started with profile Work",
+        "Browser session started with profile Project",
         "info",
       );
     } finally {
       cwdSpy.mockRestore();
+      process.env.HOME = originalHome;
       rmSync(projectDir, { recursive: true, force: true });
+      rmSync(homeDir, { recursive: true, force: true });
     }
   });
 
-  it("lets the user select a Chrome profile and saves it as project default", async () => {
+  it("uses the user browser profile default when no project default exists", async () => {
+    const projectDir = mkdtempSync(join(tmpdir(), "pi-browser-tools-"));
+    const homeDir = mkdtempSync(join(tmpdir(), "pi-browser-home-"));
+    const cwdSpy = jest.spyOn(process, "cwd").mockReturnValue(projectDir);
+    const originalHome = process.env.HOME;
+    process.env.HOME = homeDir;
+    mkdirSync(join(homeDir, ".pi", "agent"), { recursive: true });
+    writeFileSync(
+      join(homeDir, ".pi", "agent", "browser-tools.json"),
+      JSON.stringify({ profile: "Global" }),
+    );
+    try {
+      const rec = setup();
+      const { ctx, notify } = makeCtx();
+
+      await getCommand(rec, "browser-start").handler("", ctx);
+
+      expect(rec.exec).toHaveBeenCalledWith(
+        join(BROWSER_TOOLS_DIR, "browser-start.js"),
+        ["--profile", "Global"],
+        expect.objectContaining({ timeout: 10000 }),
+      );
+      expect(notify).toHaveBeenCalledWith(
+        "Browser session started with profile Global",
+        "info",
+      );
+    } finally {
+      cwdSpy.mockRestore();
+      process.env.HOME = originalHome;
+      rmSync(projectDir, { recursive: true, force: true });
+      rmSync(homeDir, { recursive: true, force: true });
+    }
+  });
+
+  it("lets the user select a Chrome profile and saves it as user default", async () => {
     const projectDir = mkdtempSync(join(tmpdir(), "pi-browser-tools-"));
     const homeDir = mkdtempSync(join(tmpdir(), "pi-browser-home-"));
     const cwdSpy = jest.spyOn(process, "cwd").mockReturnValue(projectDir);
@@ -300,6 +344,52 @@ describe("browser-session extension", () => {
       ]);
       expect(
         JSON.parse(
+          readFileSync(
+            join(homeDir, ".pi", "agent", "browser-tools.json"),
+            "utf8",
+          ),
+        ),
+      ).toEqual({
+        profile: "Profile 2",
+      });
+      expect(existsSync(join(projectDir, ".pi", "browser-tools.json"))).toBe(
+        false,
+      );
+      expect(notify).toHaveBeenCalledWith(
+        "Global browser profile default set to Profile 2",
+        "info",
+      );
+    } finally {
+      cwdSpy.mockRestore();
+      process.env.HOME = originalHome;
+      rmSync(projectDir, { recursive: true, force: true });
+      rmSync(homeDir, { recursive: true, force: true });
+    }
+  });
+
+  it("lets the user select a Chrome profile and saves it as project default with --project", async () => {
+    const projectDir = mkdtempSync(join(tmpdir(), "pi-browser-tools-"));
+    const homeDir = mkdtempSync(join(tmpdir(), "pi-browser-home-"));
+    const cwdSpy = jest.spyOn(process, "cwd").mockReturnValue(projectDir);
+    const originalHome = process.env.HOME;
+    process.env.HOME = homeDir;
+    const chromeDir = join(
+      homeDir,
+      "Library",
+      "Application Support",
+      "Google",
+      "Chrome",
+    );
+    mkdirSync(join(chromeDir, "Profile 2"), { recursive: true });
+
+    try {
+      const rec = setup();
+      const { ctx, notify } = makeCtx("Profile 2");
+
+      await getCommand(rec, "browser-profile").handler("--project", ctx);
+
+      expect(
+        JSON.parse(
           readFileSync(join(projectDir, ".pi", "browser-tools.json"), "utf8"),
         ),
       ).toEqual({
@@ -317,12 +407,15 @@ describe("browser-session extension", () => {
     }
   });
 
-  it("clears the project browser profile default", async () => {
+  it("clears the user browser profile default by default", async () => {
     const projectDir = mkdtempSync(join(tmpdir(), "pi-browser-tools-"));
+    const homeDir = mkdtempSync(join(tmpdir(), "pi-browser-home-"));
     const cwdSpy = jest.spyOn(process, "cwd").mockReturnValue(projectDir);
-    mkdirSync(join(projectDir, ".pi"));
+    const originalHome = process.env.HOME;
+    process.env.HOME = homeDir;
+    mkdirSync(join(homeDir, ".pi", "agent"), { recursive: true });
     writeFileSync(
-      join(projectDir, ".pi", "browser-tools.json"),
+      join(homeDir, ".pi", "agent", "browser-tools.json"),
       JSON.stringify({ profile: "Work" }),
     );
 
@@ -332,16 +425,18 @@ describe("browser-session extension", () => {
 
       await getCommand(rec, "browser-profile").handler("clear", ctx);
 
-      expect(existsSync(join(projectDir, ".pi", "browser-tools.json"))).toBe(
-        false,
-      );
+      expect(
+        existsSync(join(homeDir, ".pi", "agent", "browser-tools.json")),
+      ).toBe(false);
       expect(notify).toHaveBeenCalledWith(
-        "Project browser profile default cleared",
+        "Global browser profile default cleared",
         "info",
       );
     } finally {
       cwdSpy.mockRestore();
+      process.env.HOME = originalHome;
       rmSync(projectDir, { recursive: true, force: true });
+      rmSync(homeDir, { recursive: true, force: true });
     }
   });
 
