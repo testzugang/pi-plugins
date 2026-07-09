@@ -27,7 +27,8 @@
     "extensions": [
       "./extensions",
       "./packages/pi-pr-findings/extensions",
-      "./packages/pi-handoff-session/extensions/handoff-session"
+      "./packages/pi-handoff-session/extensions/handoff-session",
+      "./packages/pi-approval-recorder/extension.ts"
     ],
     "prompts": [
       "./prompts"
