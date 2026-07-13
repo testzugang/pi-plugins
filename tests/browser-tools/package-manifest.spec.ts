@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -22,7 +22,12 @@ describe("pi-plugins package manifest", () => {
         "./packages/pi-pr-findings/skills",
         "./packages/pi-dependency-audit/skills",
       ],
-      extensions: ["./extensions", "./packages/pi-pr-findings/extensions"],
+      extensions: [
+        "./extensions",
+        "./packages/pi-pr-findings/extensions",
+        "./packages/pi-handoff-session/extensions/handoff-session",
+        "./packages/pi-approval-recorder/extension.ts",
+      ],
       prompts: ["./prompts"],
       themes: ["./themes"],
     });

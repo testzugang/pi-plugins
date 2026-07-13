@@ -2,10 +2,10 @@ import {
   describe,
   expect,
   it,
-  jest,
+  vi as jest,
   beforeEach,
   afterEach,
-} from "@jest/globals";
+} from "vitest";
 import {
   existsSync,
   mkdirSync,
@@ -15,6 +15,14 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import extension from "../../extensions/session-branding";
+
+const require = (moduleName: string) => {
+  if (moduleName === "../../extensions/session-branding") {
+    return { default: extension };
+  }
+  throw new Error(`Mock require: unexpected module ${moduleName}`);
+};
 
 // Virtual mocks for pi packages
 jest.mock("@earendil-works/pi-coding-agent", () => ({}), { virtual: true });
@@ -179,7 +187,7 @@ describe("session-branding extension", () => {
     const freshFakePi = makeFakePi(freshRecorded);
     extension(freshFakePi);
     const freshStart = freshRecorded.events.get("session_start")![0];
-    const freshCtx = makeFakeCtx(tempCwd);
+    const { ctx: freshCtx } = makeFakeCtx(tempCwd);
 
     await freshStart({}, freshCtx);
     expect(freshCtx.ui.setTitle).toHaveBeenLastCalledWith(
