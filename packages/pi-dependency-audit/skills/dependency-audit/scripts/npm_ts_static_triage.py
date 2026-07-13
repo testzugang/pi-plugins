@@ -339,6 +339,29 @@ class ScanContext:
         if severity not in SEVERITY_ORDER:
             severity = "INFO"
         rel_path = self.rel(path) if isinstance(path, Path) else str(path)
+
+        # Apply severity overrides from config
+        import fnmatch
+        overrides = self.config.get("severity_overrides", [])
+        for o in overrides:
+            o_category = o.get("category")
+            o_path = o.get("path")
+            o_new_sev = o.get("new_severity")
+
+            # Match category if specified
+            if o_category and o_category != category:
+                continue
+            # Match path glob if specified
+            if o_path:
+                if not fnmatch.fnmatch(rel_path, o_path) and not fnmatch.fnmatch(Path(rel_path).name, o_path):
+                    continue
+
+            # Override severity
+            if o_new_sev:
+                severity = o_new_sev.upper()
+                if severity not in SEVERITY_ORDER:
+                    severity = "INFO"
+                break
         evidence = mask_secrets(one_line(evidence))[:900]
         title = one_line(title)[:220]
         recommendation = one_line(recommendation)[:500]
@@ -988,6 +1011,18 @@ def scan_source_file(ctx: ScanContext, path: Path):
         return
     ext = path.suffix.lower()
     rel = ctx.rel(path)
+
+    # Skip metadata, lockfiles, and JSON/JSONC files which are already processed or not executable code
+    if ext in {".json", ".jsonc"} or path.name in {"package-lock.json", "npm-shrinkwrap.json", "pnpm-lock.yaml", "yarn.lock", "tsconfig.json", ".npmrc", ".yarnrc", ".pnpmrc"}:
+        return
+
+    # Skip files matching exclude_files glob patterns in config
+    import fnmatch
+    exclude_patterns = ctx.config.get("exclude_files", [])
+    for pattern in exclude_patterns:
+        if fnmatch.fnmatch(rel, pattern) or fnmatch.fnmatch(path.name, pattern):
+            return
+
     is_lifecycle_ref = rel in ctx.lifecycle_entrypoints or path.name.lower() in {"setup.mjs", "setup.js", "install.js", "postinstall.js", "preinstall.js", "prepare.js"}
 
     if ext in BINARY_EXEC_EXTENSIONS:

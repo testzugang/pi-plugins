@@ -1,5 +1,59 @@
 {
   "min_update_age_hours": 24,
   "trusted_peer_dependency_scopes": ["@earendil-works"],
-  "trusted_peer_dependency_packages": []
+  "trusted_peer_dependency_packages": [],
+  "exclude_files": [
+    "**/*.bundle.js",
+    "**/*.min.js",
+    "**/node_modules/**",
+    "**/test/**",
+    "**/tests/**",
+    "**/*.test.ts",
+    "**/*.test.js",
+    "**/*.spec.ts",
+    "**/*.spec.js",
+    "**/*.test.mjs"
+  ],
+  "severity_overrides": [
+    {
+      "category": "payload-behavior",
+      "path": "package/**/*.ts",
+      "new_severity": "INFO"
+    },
+    {
+      "category": "payload-behavior",
+      "path": "package/*.ts",
+      "new_severity": "INFO"
+    },
+    {
+      "category": "payload-behavior",
+      "path": "package/**/*.js",
+      "new_severity": "INFO"
+    },
+    {
+      "category": "payload-behavior",
+      "path": "package/*.js",
+      "new_severity": "INFO"
+    },
+    {
+      "category": "payload-behavior",
+      "path": "scripts/release.sh",
+      "new_severity": "INFO"
+    },
+    {
+      "category": "stealth",
+      "path": "package/**/*.ts",
+      "new_severity": "INFO"
+    },
+    {
+      "category": "stealth",
+      "path": "package/*.ts",
+      "new_severity": "INFO"
+    },
+    {
+      "category": "stealth",
+      "path": "scripts/release.sh",
+      "new_severity": "INFO"
+    }
+  ]
 }
