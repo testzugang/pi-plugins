@@ -10,7 +10,10 @@ import {
   tokenize,
 } from "../lib/report.ts";
 
-function entry(command: string, mode: ManualApprovalEntry["mode"] = "allow_once"): ManualApprovalEntry {
+function entry(
+  command: string,
+  mode: ManualApprovalEntry["mode"] = "allow_once",
+): ManualApprovalEntry {
   return { timestamp: "2026-07-09T10:00:00.000Z", command, cwd: "/tmp", mode };
 }
 
@@ -24,7 +27,7 @@ describe("tokenize", () => {
       "git",
       "-C",
       "/path with space",
-      "status"
+      "status",
     ]);
   });
 
@@ -34,7 +37,7 @@ describe("tokenize", () => {
       "--prefix",
       "another path with space",
       "run",
-      "dev"
+      "dev",
     ]);
   });
 });
@@ -42,37 +45,37 @@ describe("tokenize", () => {
 describe("suggestRule", () => {
   it("suggests a regex-based pattern for git with directory-scoping", () => {
     expect(suggestRule("git -C /tmp/example status --short")).toBe(
-      "r:^git -C (?:\"[^\"]+\"|'[^']+'|\\S+) status --short$"
+      "r:^git -C (?:\"[^\"]+\"|'[^']+'|\\S+) status --short$",
     );
   });
 
   it("handles directory-scoping with quoted paths with spaces correctly", () => {
     expect(suggestRule('git -C "/tmp/some folder" status --short')).toBe(
-      "r:^git -C (?:\"[^\"]+\"|'[^']+'|\\S+) status --short$"
+      "r:^git -C (?:\"[^\"]+\"|'[^']+'|\\S+) status --short$",
     );
   });
 
   it("suggests a regex-based pattern for npm with directory-scoping", () => {
     expect(suggestRule("npm --prefix '/workspace/my app' run build")).toBe(
-      "r:^npm --prefix (?:\"[^\"]+\"|'[^']+'|\\S+) run build$"
+      "r:^npm --prefix (?:\"[^\"]+\"|'[^']+'|\\S+) run build$",
     );
   });
 
   it("suggests a regex-based pattern for docker exec with container-scoping", () => {
     expect(suggestRule("docker exec -it --user root my_container ls -la")).toBe(
-      "r:^docker exec -it --user root (?:\"[^\"]+\"|'[^']+'|\\S+) ls -la$"
+      "r:^docker exec -it --user root (?:\"[^\"]+\"|'[^']+'|\\S+) ls -la$",
     );
   });
 
   it("handles docker exec option skipping correctly", () => {
     expect(suggestRule("docker exec -w /app container-123 npm install")).toBe(
-      "r:^docker exec -w /app (?:\"[^\"]+\"|'[^']+'|\\S+) npm install$"
+      "r:^docker exec -w /app (?:\"[^\"]+\"|'[^']+'|\\S+) npm install$",
     );
   });
 
   it("escapes regex metacharacters in static command parts correctly", () => {
     expect(suggestRule("git -C /tmp/dir log --grep='fix(foo)'")).toBe(
-      "r:^git -C (?:\"[^\"]+\"|'[^']+'|\\S+) log --grep='fix\\(foo\\)'$"
+      "r:^git -C (?:\"[^\"]+\"|'[^']+'|\\S+) log --grep='fix\\(foo\\)'$",
     );
   });
 
@@ -97,7 +100,10 @@ describe("readAllowlistRules", () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = join(tmpdir(), `pi-approval-recorder-allow-${process.pid}-${Math.random().toString(36).slice(2)}`);
+    dir = join(
+      tmpdir(),
+      `pi-approval-recorder-allow-${process.pid}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(dir, { recursive: true });
   });
 
@@ -114,7 +120,9 @@ describe("readAllowlistRules", () => {
   });
 
   it("returns an empty set when the file does not exist", async () => {
-    await expect(readAllowlistRules(join(dir, "missing"))).resolves.toEqual(new Set());
+    await expect(readAllowlistRules(join(dir, "missing"))).resolves.toEqual(
+      new Set(),
+    );
   });
 });
 
@@ -129,7 +137,7 @@ describe("generateReport", () => {
       new Set(),
     );
 
-    expect(report).toContain('r:^git -C (?:"[^"]+"|\'[^\']+\'|\\S+) status$');
+    expect(report).toContain("r:^git -C (?:\"[^\"]+\"|'[^']+'|\\S+) status$");
     expect(report).toContain("2x");
     expect(report).not.toContain("npm run:*"); // only once → below threshold
     expect(report).toContain("Add these lines to ~/.pi/agent/.bash-approval");

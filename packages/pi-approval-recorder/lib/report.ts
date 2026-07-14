@@ -41,13 +41,17 @@ function escapeRegExp(string: string): string {
 }
 
 const DOCKER_FLAGS_WITH_ARGS = new Set([
-  "-u", "--user",
-  "-w", "--workdir",
-  "-e", "--env",
+  "-u",
+  "--user",
+  "-w",
+  "--workdir",
+  "-e",
+  "--env",
   "--cpus",
-  "-m", "--memory",
+  "-m",
+  "--memory",
   "--network",
-  "--platform"
+  "--platform",
 ]);
 
 const PATH_PATTERN = "(?:\"[^\"]+\"|'[^']+'|\\S+)";
@@ -164,7 +168,10 @@ export function generateReport(
     const bucket = byRule.get(rule) ?? { count: 0, examples: [] };
     bucket.count += 1;
     const example = truncate(entry.command.trim().split("\n")[0]);
-    if (bucket.examples.length < MAX_EXAMPLES && !bucket.examples.includes(example)) {
+    if (
+      bucket.examples.length < MAX_EXAMPLES &&
+      !bucket.examples.includes(example)
+    ) {
       bucket.examples.push(example);
     }
     byRule.set(rule, bucket);
@@ -178,7 +185,8 @@ export function generateReport(
     return "No recurring manual approvals found yet.";
   }
 
-  let report = "Suggested bash approval rules (from recurring manual approvals):\n\n";
+  let report =
+    "Suggested bash approval rules (from recurring manual approvals):\n\n";
   for (const [rule, { count, examples }] of recurring) {
     report += `${count}x: ${rule}\n`;
     for (const example of examples) {
