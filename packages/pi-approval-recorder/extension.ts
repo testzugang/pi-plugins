@@ -37,7 +37,7 @@ export default function (pi: ExtensionAPI) {
         const existingRules = await readAllowlistRules(
           path.join(agentDir, ".bash-approval"),
         );
-        ctx.ui.notify(generateReport(entries, existingRules), "info");
+        ctx.ui.notify(generateReport(entries, existingRules, ctx.ui.theme), "info");
       } catch (e: any) {
         ctx.ui.notify(`Failed to generate report: ${e.message}`, "error");
       }

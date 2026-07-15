@@ -154,6 +154,7 @@ export async function readAllowlistRules(
 export function generateReport(
   entries: ManualApprovalEntry[],
   existingRules: Set<string>,
+  theme?: any,
 ): string {
   const byRule = new Map<string, { count: number; examples: string[] }>();
 
@@ -182,19 +183,37 @@ export function generateReport(
     .sort((a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]));
 
   if (recurring.length === 0) {
-    return "No recurring manual approvals found yet.";
+    return theme
+      ? theme.fg("warning", "No recurring manual approvals found yet.")
+      : "No recurring manual approvals found yet.";
   }
 
-  let report =
-    "Suggested bash approval rules (from recurring manual approvals):\n\n";
+  let report = theme
+    ? theme.bold(
+        theme.fg(
+          "accent",
+          "Suggested bash approval rules (from recurring manual approvals):\n\n",
+        ),
+      )
+    : "Suggested bash approval rules (from recurring manual approvals):\n\n";
+
   for (const [rule, { count, examples }] of recurring) {
-    report += `${count}x: ${rule}\n`;
-    for (const example of examples) {
-      report += `     e.g. ${example}\n`;
+    if (theme) {
+      report += `${theme.bold(theme.fg("accent", count + "x"))}: ${theme.fg("success", rule)}\n`;
+      for (const example of examples) {
+        report += `     ${theme.fg("muted", "e.g.")} ${theme.fg("dim", example)}\n`;
+      }
+    } else {
+      report += `${count}x: ${rule}\n`;
+      for (const example of examples) {
+        report += `     e.g. ${example}\n`;
+      }
     }
     report += "\n";
   }
-  report += "Add these lines to ~/.pi/agent/.bash-approval";
+
+  const footer = "Add these lines to ~/.pi/agent/.bash-approval";
+  report += theme ? theme.fg("accent", footer) : footer;
   return report;
 }
 
