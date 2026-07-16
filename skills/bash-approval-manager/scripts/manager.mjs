@@ -222,6 +222,26 @@ function runAudit() {
     } else {
       // Literal / Glob Rules
       validCompiledRules.push({ rule, lineNum, type: rule.endsWith('*') ? 'glob' : 'literal' });
+
+      // Security check: Check for unsafe general glob rule end ":*" (risk of command substitution)
+      if (rule.endsWith(':*')) {
+        printWarning(`Zeile ${lineNum}: Potenzielle Command-Substitution-Sicherheitslücke!`);
+        console.log(`  └─ Regel: ${colors.yellow}${rule}${colors.reset}`);
+        console.log(`  └─ Risiko: Erlaubt unbemerkt Injektionen wie "${rule.slice(0, -2)} \$(touch /tmp/evil)".`);
+        const baseCmd = rule.slice(0, -2).trim();
+        console.log(`  └─ Empfehlung: Umstellen auf sichere Regex: ${colors.green}r:^${baseCmd}(?: [^$\\x60]+)?$${colors.reset}`);
+        warningsCount++;
+      }
+
+      // Security check: Check for unsafe "cd" with trailing glob "*" (risk of substitution directly on name)
+      if (rule.startsWith('cd ') && rule.endsWith('*') && !rule.endsWith(':*')) {
+        printWarning(`Zeile ${lineNum}: Gefährliches gieriges Verzeichnis-Globbing!`);
+        console.log(`  └─ Regel: ${colors.yellow}${rule}${colors.reset}`);
+        console.log(`  └─ Risiko: Erlaubt Injektionen ohne Leerzeichen wie "${rule.slice(0, -1)}\$(touch /tmp/evil)".`);
+        const baseDir = rule.slice(3, -1).trim();
+        console.log(`  └─ Empfehlung: Umstellen auf sichere Regex: ${colors.green}r:^cd ${baseDir}(?:/[a-zA-Z0-9_\\.\\-]+)*$${colors.reset}`);
+        warningsCount++;
+      }
     }
   }
 
